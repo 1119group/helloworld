@@ -1,9 +1,8 @@
 from quantum_module import init,show_elapsed_time,show_progress,get_vn_entropy
-from mbl import entropy_diag,entropy_exp,get_random_state,get_init_delta_t,get_delta_delta_t
+from mbl import get_random_state,get_init_delta_t,get_delta_delta_t
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.sparse import dok_matrix
-from scipy.sparse.linalg import norm,expm_multiply
+from scipy.sparse.linalg import expm_multiply
 from multiprocessing import Pool,Manager
 import os
 from time import time
