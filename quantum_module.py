@@ -1,0 +1,254 @@
+"""
+This module provides common functions to do quantum mechanical calculations.
+
+7-15-2016
+"""
+
+import numpy as np
+from numpy.linalg import eigh,eigvalsh
+from numpy.random import random_sample,randint
+from scipy.sparse import dok_matrix,eye,kron,issparse
+from time import time
+import sys
+
+def init(S):
+    '''
+    Initializes calculations by computing Sx, Sy and Sz. All calculations
+    are done in the z-basis.
+    Returns sparse matrices.
+    '''
+    # Create the raising and lowering operators.
+    S_plus = dok_matrix((int(2*S+1),int(2*S+1)),float)
+    for i in np.arange(-S,S,1):
+        m = -i-1
+        S_plus[int(i+S),int(i+S+1)] = np.sqrt(S*(S+1)-m*(m+1))
+    S_minus = S_plus.transpose()
+    
+    # Create Sx, Sy and Sz.
+    Sx = 0.5*(S_plus + S_minus)
+    Sy = -0.5j*(S_plus - S_minus)
+    Sz = dok_matrix((int(2*S+1),int(2*S+1)),float)
+    for i in np.arange(S,-S-1,-1):
+        Sz[-int(i-S),-int(i-S)] = i
+        
+    return Sx, Sy, Sz
+
+def get_full_matrix(S,k,N):
+    '''
+    Builds the S matrices in an N particle system. Assumes periodic boundary
+    condition.    
+    "S" could be an operator/state we want to work on. If it is a state, it 
+    must be put in a column vector form. "S" must be sparse.
+    "k" is the location index of the particle in a particle chain. The first
+    particle has k=0, the second has k=1 and so on.
+    Returns a sparse matrix.
+    '''
+    D = S.get_shape()[0]         # Dimensions of the operator/state vector.
+
+    if k == 0 or k == N:         # k = N is the periodic boundary condition.
+        S_full = dok_matrix(S)
+        S_full = kron(S_full,eye(D**(N-1))) 
+    elif k == 1:
+        S_full = eye(D)
+        S_full = kron(S_full,S)
+        S_full = kron(S_full,eye(D**(N-2)))
+    else:
+        S_full = eye(D)
+        S_full = kron(S_full,eye(D**(k-1)))
+        S_full = kron(S_full,S)
+        S_full = kron(S_full,eye(D**(N-k-1)))
+            
+    return S_full.tocsr()
+    
+def exp_value(S,psi):
+    '''
+    Computes the expected value of an operator with a given state "psi."
+    "S" is an operator/observable and must be a sparse matrix.
+     "psi" is a column vector and its sparsity is optional.
+    '''
+    if issparse(psi) == False:
+        psi = dok_matrix(np.matrix(psi))
+    if np.shape(psi)[1] != 1:
+        psi = psi.conjugate().transpose()
+        
+    exp_val = psi.transpose().conjugate().dot(S.dot(psi))
+    exp_value = np.real(exp_val[0,0])
+    return exp_value
+    
+def sort_eigs(E,V):
+    '''
+    Sort the given set of eigenvectors and eigenvectors by the eigenvalues 
+    from the least to the greatest.
+    "E" is a list of eigenvalues.
+    "V" is an eigenvector matrix/array.
+    '''
+    temp = []
+    E_sorted = np.copy(E)
+    V_sorted = np.copy(V)
+    for j in range(np.shape(E)[0]-1):
+        for i in range(np.shape(E)[0]-1):
+            if E_sorted[i] > E_sorted[i+1]:
+                temp.append(np.copy(V_sorted[:,i]))
+                V_sorted[:,i] = V_sorted[:,i+1]
+                V_sorted[:,i+1] = temp.pop()
+                temp.append(E_sorted[i])
+                E_sorted[i] = E_sorted[i+1]
+                E_sorted[i+1] = temp.pop()
+    return E_sorted,V_sorted
+
+def red_rho_A_1spin(psi,spin):
+    '''
+    Forms a reduced ground state density matrix from a given state "psi." 
+    Every particle aside from the first will be traced out.
+    "psi" must be a column vector. Sparsity is optional. "spin" the the spin
+    number.
+    Returns a sparse matrix.
+    '''
+    
+    dim = int(2*spin+1)           # Dimensions of the spin matrices.
+    
+    # Accommodate both sparse and dense matrices for compatibility.
+    if issparse(psi):
+        psi = psi.todense()
+        
+    psi_reshaped = np.reshape(psi,(dim,int(np.shape(psi)[0]/2)))
+    rho_A = np.dot(psi_reshaped,np.conjugate(np.transpose(psi_reshaped)))
+    return dok_matrix(rho_A)
+
+def red_rho_eqsplit(psi,spin,N):
+    '''
+    Forms a reduced density matrix from a given state "psi" for system AB
+    in which the size of A equals that of B. "N" must be an even number.
+    "psi" must be a column vector. Sparsity is optional. "spin" is the spin
+    number.
+    Returns a sparse matrix.
+    '''
+    if N % 2 != 0:
+        raise Exception("N must be an even integer.")
+    
+    dim = int(2*spin+1)**int(N/2)           # Dimensions of the spin matrices.
+    
+    # Accommodate both sparse and dense matrices for compatibility.
+    if issparse(psi):
+        psi = psi.todense()
+        
+    psi_reshaped = np.reshape(psi,(dim,dim))
+    rho_A = np.dot(psi_reshaped,np.conjugate(np.transpose(psi_reshaped)))
+    return dok_matrix(rho_A)
+
+def get_vn_entropy(psi,spin,N=None,mode='1spin'):
+    '''
+    Compute the von Neumann entropy for a given state "psi".
+    "psi" must be a column vector. Sparsity is optional.
+    Available modes: "1spin" for the entanglement entropy for only the first
+    spin, "eqsplit" for the entanglement entropy for an evenly split system.
+    '''
+    if N == None and mode == 'eqsplit':
+        raise Exception("N cannot be 'None' for mode='eqsplit'.")
+        
+    if mode == '1spin':
+        red_rho_A = red_rho_A_1spin(psi,spin)
+    elif mode == 'eqsplit':
+        red_rho_A = red_rho_eqsplit(psi,spin,N)
+    
+    lamb = eigvalsh(red_rho_A.todense()) # Eigenvalues of the reduced matrix.
+    S_AB_terms = []
+    for i in range(np.shape(red_rho_A)[0]):
+        if abs(lamb[i]) < 1e-6:
+            # lim a->0 (alog(a)) = 0. It also removes some minuscule negative 
+            #  lambda values resulting from rounding errors.
+            S_AB_terms.append(0)
+        else:
+            S_AB_terms.append(-lamb[i]*np.log2(lamb[i]))
+        
+    return np.sum(S_AB_terms)
+
+def rand_sign():
+    '''Returns a random positive or negative sign.'''
+    s = randint(0,2)
+    if s == 1:
+        sign = 1
+    elif s == 0:
+        sign = -1
+    return sign
+
+def rand_cnum():
+    '''Returns a random complex number with a modulus in [0,1].'''
+    sign_a = rand_sign()
+    sign_b = rand_sign()
+    cnum = sign_a*random_sample()/2 + sign_b*random_sample()*0.5j
+    return cnum
+
+def change_basis(S,basis):
+    '''
+    Project a given state/operator "S" onto a new basis.
+    "S" is a given sparse matrix or a sparse column vector. 
+    "basis" is a complete set of orthonormal vectors, ordered in a 
+    matrix with each column vector being a basis vector.
+    Returns a sprase column vector.
+    '''
+    if issparse(basis) is False:     # basis sparsity is optional.
+        basis = dok_matrix(basis)
+    
+    if np.shape(S)[0] == np.shape(S)[1]:    # For operators
+        U = dok_matrix(basis)
+        S_nb = U.conjtransp().dot(S.dot(U))
+    else:                                   # For vectors
+        dim = int(np.shape(basis)[1])
+        S_nb = dok_matrix((dim,1),dtype=complex)
+        for i in range(dim):
+            S_nb[i,0] = S.transpose().conjugate().dot(basis[:,i])[0,0]
+    return S_nb
+
+def sec_to_HHMMSS(time):
+    '''
+    Converts time (in seconds) into the HHMMSS format. Returns a string.
+    '''
+    Hr = int(time // 3600)
+    if Hr < 10:
+        Hr = "0" + str(Hr)
+    else:
+        Hr = str(Hr)
+    Min = int((time % 3600) // 60)
+    if Min < 10:
+        Min = "0" + str(Min)
+    else:
+        Min = str(Min)
+    Sec = round(time % 60)
+    if Sec < 10:
+        Sec = "0" + str(Sec)
+    else:
+        Sec = str(Sec)
+    elapsed_time = Hr + ":" + Min + ":" + Sec
+    return elapsed_time
+
+def show_progress(start_time,iteration,total,barLength=25):
+    '''
+    Prints the progress on screen. "start_time" is the the start time of the
+    entire program. "iteration" is the job number of the current job. As with
+    everything in Python, it is 0 based. For instance, if the current job is 
+    the first task, iteration=0. "total" is the total number of tasks to
+    perform.
+    The output is in the hh:mm:ss format.
+    '''
+    # Calculate time used for progress report purposes.
+    elapsed = time() - start_time
+    ET_sec = elapsed/(iteration+1)*(total-iteration-1)
+    ET = sec_to_HHMMSS(ET_sec)
+    report_time = "Est. time: " + ET
+    
+    filledLength = int(round(barLength*(iteration+1)/total))
+    percent = round(100.00 * ((iteration+1)/total), 1)
+    bar = '\u2588' * filledLength + '\u00B7' * (barLength - filledLength)
+    sys.stdout.write('\r%s |%s| %s%s %s' % ('Progress:', bar, 
+                                            percent, '%  ', report_time)),
+    sys.stdout.flush()
+    if iteration == total:
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+
+def show_elapsed_time(start_time):
+    '''Prints the total elapsed time.'''
+    elapsed = time() - start_time
+    elapsed_time = sec_to_HHMMSS(elapsed)
+    print("\nTime elapsed: " + elapsed_time)
