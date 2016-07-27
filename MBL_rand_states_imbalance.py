@@ -122,6 +122,11 @@ plt.title(title)
 
 plt.semilogx(t,imbalance_plot,linewidth=0, marker='o', 
         markerfacecolor='orangered', markeredgewidth=0, markersize=4.5)
-figname = 'MBL_imbalance' + str(N) + 'particles_disorder' + str(h) 
+
+if h > 3.7:
+    regime = 'MBL'
+else:
+    regime = 'ETH'
+figname = regime + '_imbalance' + str(N) + 'particles_disorder' + str(h) 
 figname += '_avg' + str(psi_count) + '.png'
 plt.show()

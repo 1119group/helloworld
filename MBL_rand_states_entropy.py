@@ -96,6 +96,11 @@ plt.title(title)
 
 plt.loglog(t,entropy_plot,linewidth=0, marker='o', 
         markerfacecolor='orangered', markeredgewidth=0, markersize=4.5)
-figname = 'MBL_entropy' + str(N) + 'particles_disorder' + str(h) 
+
+if h > 3.7:
+    regime = 'MBL'
+else:
+    regime = 'ETH'
+figname = regime + '_entropy' + str(N) + 'particles_disorder' + str(h) 
 figname += '_avg' + str(psi_count) + '.png'
 plt.savefig(figname)
