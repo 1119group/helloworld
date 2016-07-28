@@ -1,7 +1,7 @@
 """
 This module provides common functions to do quantum mechanical calculations.
 
-7-15-2016
+7-27-2016
 """
 
 import numpy as np
@@ -200,11 +200,12 @@ def change_basis(S,basis):
             S_nb[i,0] = S.transpose().conjugate().dot(basis[:,i])[0,0]
     return S_nb
 
-def sec_to_HHMMSS(time):
+def sec_to_human_readable_format(time):
     '''
     Converts time (in seconds) into the HHMMSS format. Returns a string.
     '''
-    Hr = int(time // 3600)
+    Days = str(int(time // 86400))
+    Hr = int((time % 86400) // 3600)
     if Hr < 10:
         Hr = "0" + str(Hr)
     else:
@@ -219,7 +220,12 @@ def sec_to_HHMMSS(time):
         Sec = "0" + str(Sec)
     else:
         Sec = str(Sec)
-    elapsed_time = Hr + ":" + Min + ":" + Sec
+    if Days == str(0):
+        elapsed_time = Hr + ":" + Min + ":" + Sec + "        " 
+    elif Days == str(1):
+        elapsed_time = Days + " Day " + Hr + ":" + Min + ":" + Sec + "  "
+    else:
+        elapsed_time = Days + " Days " + Hr + ":" + Min + ":" + Sec
     return elapsed_time
 
 def show_progress(start_time,iteration,total,barLength=25):
@@ -234,11 +240,17 @@ def show_progress(start_time,iteration,total,barLength=25):
     # Calculate time used for progress report purposes.
     elapsed = time() - start_time
     ET_sec = elapsed/(iteration+1)*(total-iteration-1)
-    ET = sec_to_HHMMSS(ET_sec)
-    report_time = "Est. time: " + ET
-    
-    filledLength = int(round(barLength*(iteration+1)/total))
-    percent = round(100.00 * ((iteration+1)/total), 1)
+    ET = sec_to_human_readable_format(ET_sec)
+
+    if iteration == 0:
+        report_time = ""
+        filledLength = 0
+        percent = 0
+    else:
+        report_time = "Est. time: " + ET
+        filledLength = int(round(barLength*(iteration+1)/total))
+        percent = round(100.00 * ((iteration+1)/total), 1)
+
     bar = '\u2588' * filledLength + '\u00B7' * (barLength - filledLength)
     sys.stdout.write('\r%s |%s| %s%s %s' % ('Progress:', bar, 
                                             percent, '%  ', report_time)),
@@ -250,5 +262,5 @@ def show_progress(start_time,iteration,total,barLength=25):
 def show_elapsed_time(start_time):
     '''Prints the total elapsed time.'''
     elapsed = time() - start_time
-    elapsed_time = sec_to_HHMMSS(elapsed)
+    elapsed_time = sec_to_human_readable_format(elapsed)
     print("\nTime elapsed: " + elapsed_time)

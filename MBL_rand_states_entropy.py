@@ -39,17 +39,30 @@ def get_plot(p):
     show_progress(start_time,namespace.progress-1,psi_count)
     return entropy_plot
 
+# Sets up the environment for computation.
 start_time = time()
 spin = 1/2
-N = 20
-h = 2
+N = int(input('Enter the size "N" of the particle system: '))
+h = int(input('Enter the disorder strength "h": '))
 D = int(2*spin+1)**N
 Sx,Sy,Sz = init(spin)
-psi_count = 50
-sample_size = 100               # Graphing sample size.
+psi_count = int(input('Enter the number of states you are averaging over: '))
+sample_size = int(input('Enter the number of points you are plotting: '))
 threads = os.cpu_count()
 time_range_lower_lim = 0.1
-time_range_upper_lim = 50
+time_range_upper_lim = int(input('Enter the upper limit of "t": '))
+output_mode_prompt = 'Exit behavior:\n\t1. Save the figure'
+output_mode_prompt += '\n\t2. Display the figure on screen'
+output_mode_prompt += '\n\t3. Save the figure and show it on screen'
+output_mode_prompt += '\nPlease choose one option from the list above: '
+output_mode = input(output_mode_prompt)
+while True:
+    if output_mode == str(1) or output_mode == str(2) or output_mode == str(3):
+        break
+    output_mode = input(
+         'The only available options are 1, 2 and 3.\nPlease choose again: '
+         )
+print('')
 
 # Find where to plot the points on a logarithmic time scale.
 t = []
@@ -80,27 +93,31 @@ for n in range(1,psi_count):
     entropy_plot += entropy_plot_list[n]
 entropy_plot /= psi_count
 
+# Save the plot data.
 datafilename = 'entropy_plot_data/entropy_plot_' + str(N) 
 datafilename += 'particles_disorder' + str(h) + '_avg' + str(psi_count) 
 datafilename += '_time' + str(time_range_upper_lim) + '.txt'
 np.savetxt(datafilename,entropy_plot)
 show_elapsed_time(start_time)
 
+# Set up the plot.
 plt.xlim(time_range_lower_lim,time_range_upper_lim*2)
 plt.ylim(0.1,10)
 plt.xlabel('Time (t)')
 plt.ylabel('S(t)')
-title = 'MBL entropy size=' + str(N) + ' h='
-title += str(h) + ' averaged over ' + str(psi_count) + ' states'
-plt.title(title)
-
-plt.loglog(t,entropy_plot,linewidth=0, marker='o', 
-        markerfacecolor='orangered', markeredgewidth=0, markersize=4.5)
-
 if h > 3.7:
     regime = 'MBL'
 else:
     regime = 'ETH'
+title = regime + ' entropy size=' + str(N) + ' h='
+title += str(h) + ' averaged over ' + str(psi_count) + ' states'
+plt.title(title)
+plt.loglog(t,entropy_plot,linewidth=0, marker='o', 
+        markerfacecolor='orangered', markeredgewidth=0, markersize=4.5)
 figname = regime + '_entropy' + str(N) + 'particles_disorder' + str(h) 
 figname += '_avg' + str(psi_count) + '.png'
-plt.savefig(figname)
+
+if output_mode == str(1) or output_mode == str(3):
+    plt.savefig(figname)
+if output_mode == str(2) or output_mode == str(3):
+    plt.show()
