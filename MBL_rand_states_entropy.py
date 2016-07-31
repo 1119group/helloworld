@@ -19,8 +19,7 @@ def plot_entropy():
     # Plot the second point which requires the first time evolution.
     current_delta_t = init_delta_t
     psi_time_evolved = expm_multiply(-1j*H*current_delta_t,psi)
-    for k in range(N):
-        entropy_plot[1] += get_vn_entropy(psi_time_evolved,
+    entropy_plot[1] += get_vn_entropy(psi_time_evolved,
                                 spin,N,mode='eqsplit')
 
     # Plot the rest of the points with time evolution.
