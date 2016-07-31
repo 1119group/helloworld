@@ -200,6 +200,86 @@ def change_basis(S,basis):
             S_nb[i,0] = S.transpose().conjugate().dot(basis[:,i])[0,0]
     return S_nb
 
+def next_permutation(l):
+    '''
+    Code plagiarized from StackOverflow. With a given list of values,
+    this function changes the list in situ to the next permutation.
+    This function differs from itertools.permutations in that it takes
+    into account repeated values in the list and avoid returning duplicates.
+
+    "l" is a list which this function will modify.
+    '''
+    n = len(l)
+    #Step 1: Find tail
+    last = n-1 #tail is from `last` to end
+    while last>0:
+        if l[last-1] < l[last]: break
+        last -= 1
+    #Step 2: Increase the number just before tail
+    if last>0:
+        small = l[last-1]
+        big = n-1
+        while l[big] <= small: big -= 1
+        l[last-1], l[big] = l[big], small
+    #Step 3: Reverse tail
+    i = last
+    j = n-1
+    while i < j:
+        l[i], l[j] = l[j], l[i]
+        i += 1
+        j -= 1
+    return l
+
+def permute_one_zero(l):
+    '''
+    Find the next permutation of a list of ones and zeros. This function
+    permutes in the reverse order of next_permutation.
+
+    "l" is a list which this function will modify.
+    '''
+    n = len(l)-1
+    migrate = False
+    while True:
+        # Find the last 1
+        i = n
+        while True:
+            if l[i] == 1:
+                break
+            else:
+                i -= 1
+        # Switch the element with the next element if the element is
+        #  not the last element.
+        if i != n:
+            l[i], l[i+1] = l[i+1], l[i]
+            if migrate:
+                i += 2
+                j = i
+                # Find the first 1 to the right of the 1 we just moved.
+                while True:
+                    if l[j] == 1:
+                        break
+                    else:
+                        j += 1
+                        if j >= len(l):
+                            break
+                # Move all the 1's to the left.
+                w = len(l[j:])
+                for k in range(w):
+                    l[i], l[j] = l[j], l[i]
+                    i += 1
+                    j += 1
+                migrate = False
+            break
+        # Since there is a 1/some 1's at the very end of the list,
+        #  we loop to look for the next one to the left that is
+        #  separated by some 0's.
+        else:
+            # A flag to tell the function to move all the 1's at
+            #  the right end to the left.
+            migrate = True
+            n -= 1
+    return l
+
 def sec_to_human_readable_format(time):
     '''
     Converts time (in seconds) into the HHMMSS format. Returns a string.
