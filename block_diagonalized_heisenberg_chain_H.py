@@ -57,22 +57,20 @@ def get_block_heisenberg_chain_H(Sx,Sy,Sz,N,h,J=1):
         # Fill in the off-diagonal elements for the current block.
         if block_size != 1:
             for i in range(block_size):
-                for j in range(block_size):
-                    if i != j:
-                        # All that says is that the only places that will 
-                        # have a non-zero value is where there is one and only
-                        # one spot between the bra and ket that 10-->01 or 
-                        # 01-->10 happend. (Will fix comment later)
-                        diff = list(map(operator.sub,current_j_basis_set[i],
-                                  current_j_basis_set[j]))
-                        diff = list(map(operator.abs,diff))
-                        diff_sum = sum(diff)
-                        if diff_sum == 2:
-                            diff_k = 0
-                            for k in range(N):
-                                diff_k += abs(diff[k] - diff[k-1])
-                            if diff_k == 2:
-                                H[curr_pos+i,curr_pos+j] = -0.5
+                k = N-1
+                nz_list = []
+                while k >= 0:
+                    curr_bs = current_j_basis_set[i][:]
+                    while True:
+                        if abs(curr_bs[k]-curr_bs[k-1]) == 1:
+                            break
+                        else:
+                            k -= 1
+                    curr_bs[k],curr_bs[k-1] = curr_bs[k-1],curr_bs[k]
+                    nz_list.append(current_j_basis_set.index(curr_bs))
+                    k -= 1
+                for k in nz_list:
+                    H[curr_pos+i,curr_pos+k] = -0.5
         curr_pos += block_size
         current_j -= 1
     return H
