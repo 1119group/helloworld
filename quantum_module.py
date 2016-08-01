@@ -205,7 +205,7 @@ def next_permutation(l):
     Code plagiarized from StackOverflow. With a given list of values,
     this function changes the list in situ to the next permutation.
     This function differs from itertools.permutations in that it takes
-    into account repeated values in the list and avoid returning duplicates.
+    into account repeated values in the list and avoids returning duplicates.
 
     "l" is a list which this function will modify.
     '''

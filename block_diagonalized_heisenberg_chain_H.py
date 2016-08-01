@@ -9,13 +9,17 @@ from scipy.sparse import lil_matrix
 from scipy.misc import comb
 import operator
 
-def get_heisenberg_chain_H(Sx,Sy,Sz,N,h,J=1):
-    global current_j_basis_set,block_size,i,k,current_j,j_max,tot,random_field
+def get_block_heisenberg_chain_H(Sx,Sy,Sz,N,h,J=1,seed=None):
+    if seed != None:
+        rand_field = np.random.RandomState()
+        rand_field.seed(seed)
+        random_field = h*rand_field.rand(N)
+    elif seed == None:
+        random_field = h*np.random.rand(N)
     
-    random_field = h*np.random.rand(N)
     for i in range(N):
         random_field[i] *= rand_sign()
-     
+
     D = Sx.get_shape()[0]**N
     H = lil_matrix((D,D),dtype=complex)
     j_max = int(round(0.5*N))
@@ -43,16 +47,18 @@ def get_heisenberg_chain_H(Sx,Sy,Sz,N,h,J=1):
             h_sum = 0
             tot = 0
             for k in range(N):
+                # h(i)Sz(i)
                 if current_j_basis_set[i][k] == 0:
                     h_sum -= random_field[k]
                 elif current_j_basis_set[i][k] == 1:
                     h_sum += random_field[k]
-                    
+
+                # Sz(i)Sz(i+1)
                 diff = current_j_basis_set[i][N-1-k] 
                 diff -= current_j_basis_set[i][N-2-k]
                 tot += abs(diff)
-            tot = N-2*tot
-            H[curr_pos+i,curr_pos+i] = -1*tot*0.25 + 0.5*h_sum
+            imb = N-2*tot
+            H[curr_pos+i,curr_pos+i] = -1*imb*0.25 + 0.5*h_sum
             
         # Fill in the off-diagonal elements for the current block.
         if block_size != 1:
