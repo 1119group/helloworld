@@ -9,14 +9,8 @@ from scipy.sparse import lil_matrix
 from scipy.misc import comb
 import operator
 
-def get_block_heisenberg_chain_H(Sx,Sy,Sz,N,h,J=1,seed=None):
-    if seed != None:
-        rand_field = np.random.RandomState()
-        rand_field.seed(seed)
-        random_field = h*rand_field.rand(N)
-    elif seed == None:
-        random_field = h*np.random.rand(N)
-    
+def get_block_heisenberg_chain_H(Sx,Sy,Sz,N,h,J=1):
+    random_field = h*np.random.rand(N)
     for i in range(N):
         random_field[i] *= rand_sign()
 
