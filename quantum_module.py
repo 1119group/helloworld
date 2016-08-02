@@ -163,6 +163,44 @@ def get_vn_entropy(psi,spin,N=None,mode='1spin'):
         
     return np.sum(S_AB_terms)
 
+def get_init_delta_t(time_range_lower_lim,time_range_upper_lim,sample_size):
+    '''
+    This function provides the initial time step for a logarithmic time
+    axis.
+    '''
+    log_scale_interval = np.log10(time_range_upper_lim/time_range_lower_lim)
+    t_2 = time_range_lower_lim*10**(log_scale_interval/(sample_size-1))
+    init_delta_t = t_2 - time_range_lower_lim
+    r = t_2/time_range_lower_lim
+    return init_delta_t,r
+
+def get_delta_delta_t(time_range_lower_lim,plot_point,r):
+    '''
+    Finds the change of delta_t at each plot point for a logarithmic time
+    axis. Only works well for plot_point >= 2.
+    '''
+    delta_delta_t = time_range_lower_lim*r**(plot_point-1)*(r-1)**2
+    return delta_delta_t
+
+def get_log_t_axis(time_range_lower_lim,time_range_upper_lim,sample_size):
+    '''
+    Sets up the time axis for a logarithmic plot. Returns a list of
+    plot points.
+    '''
+    t = []
+    t.append(time_range_lower_lim)
+    current_t = time_range_lower_lim
+    init_delta_t,r = get_init_delta_t(time_range_lower_lim,
+                        time_range_upper_lim,sample_size)
+    current_delta_t = init_delta_t
+    t.append(time_range_lower_lim+current_delta_t)
+    for plot_point in range(2,sample_size):
+        delta_delta_t = get_delta_delta_t(time_range_lower_lim,plot_point,r)
+        current_delta_t += delta_delta_t
+        current_t += current_delta_t
+        t.append(current_t)
+    return t
+
 def rand_sign():
     '''Returns a random positive or negative sign.'''
     s = randint(0,2)
