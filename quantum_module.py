@@ -1,7 +1,7 @@
 """
 This module provides common functions to do quantum mechanical calculations.
 
-7-27-2016
+8-2-2016
 """
 
 import numpy as np
@@ -136,12 +136,13 @@ def red_rho_eqsplit(psi,spin,N):
     rho_A = np.dot(psi_reshaped,np.conjugate(np.transpose(psi_reshaped)))
     return dok_matrix(rho_A)
 
-def get_vn_entropy(psi,spin,N=None,mode='1spin'):
+def get_vn_entropy(psi,spin,N=None,mode='1spin',base='e'):
     '''
     Compute the von Neumann entropy for a given state "psi".
     "psi" must be a column vector. Sparsity is optional.
     Available modes: "1spin" for the entanglement entropy for only the first
     spin, "eqsplit" for the entanglement entropy for an evenly split system.
+    Available bases: "e" for natural log, "2" for log2 and "10" for log10.
     '''
     if N == None and mode == 'eqsplit':
         raise Exception("N cannot be 'None' for mode='eqsplit'.")
@@ -159,8 +160,15 @@ def get_vn_entropy(psi,spin,N=None,mode='1spin'):
             #  lambda values resulting from rounding errors.
             S_AB_terms.append(0)
         else:
-            S_AB_terms.append(-lamb[i]*np.log2(lamb[i]))
-        
+            if base == 'e':
+                S_AB_terms.append(-lamb[i]*np.log(lamb[i]))
+            elif base == '2' or base == 2:
+                S_AB_terms.append(-lamb[i]*np.log2(lamb[i]))
+            elif base == '10' or base == 10:
+                S_AB_terms.append(-lamb[i]*np.log10(lamb[i]))
+            else:
+                raise Exception('Available bases are "e", "2" and "10"')
+
     return np.sum(S_AB_terms)
 
 def get_init_delta_t(time_range_lower_lim,time_range_upper_lim,sample_size):
