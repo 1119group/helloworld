@@ -1,6 +1,7 @@
 import quantum_module as qm
 from aubry_andre_H import aubry_andre_H
 import numpy as np
+from scipy.sparse import dok_matrix
 from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
 
