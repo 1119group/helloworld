@@ -24,7 +24,8 @@ def plot_entropy_time_evo_log(spin,N,h,c,phi,time_range_lower_lim,
 
         # Plot the rest of the points with time evolution.
         for plot_point in range(2,sample_size):
-            delta_delta_t = qm.get_delta_delta_t(time_range_lower_lim,plot_point,r)
+            delta_delta_t = qm.get_delta_delta_t(time_range_lower_lim,
+                                                    plot_point,r)
             current_delta_t += delta_delta_t
             psi_time_evolved = expm_multiply(-1j*H*current_delta_t,
                                     psi_time_evolved)

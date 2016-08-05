@@ -3,16 +3,28 @@ This function generates a block diagonalized Hamiltonian for a
 fermionic Aubry-Andre Hamiltonian.
 '''
 
-from quantum_module import permute_one_zero
+import quantum_modele as qm
 import numpy as np
 from scipy.sparse import lil_matrix
 from scipy.misc import comb
 import operator
 
+def bin2dec(l):
+    '''
+    Convert a list of 1's and 0's, a binary representation of a number,
+    into a decimal number.
+    "l" must be a list/array of 1's and 0's.
+    '''
+    n = len(l)
+    dec = 0
+    for i in range(n):
+        dec += l[n-1-i]*2**i
+    return dec
+
 def aubry_andre_block_H(Sx,Sy,Sz,N,h,c,phi=0,J=1):
     field = np.empty(N)
     for i in range(N):
-        field[i] = h*np.cos(c*i+phi)
+        field[i] = h*np.cos(c*2*np.pi*i+phi)
 
     D = Sx.get_shape()[0]**N
     H = lil_matrix((D,D),dtype=complex)
@@ -25,12 +37,20 @@ def aubry_andre_block_H(Sx,Sy,Sz,N,h,c,phi=0,J=1):
 
         # Find all the binary representations of the current j.
         basis_set_seed = [0]*N
+        basis_ind_dict = {}
+        basis_index = 0
         for n in range(j_max+current_j):
             basis_set_seed[N-1-n] = 1
         current_j_basis_set = []
-        if not (current_j == j_max or current_j == -1*j_max):
+        if block_size != 1:
             for i in range(block_size):
-                current_j_basis_set.append(permute_one_zero(basis_set_seed)[:])
+                current_j_basis_set.append(
+                       qm.permute_one_zero(basis_set_seed)[:])
+                # Create a dictionary that links the decimal
+                #  representation of a basis and its position in this
+                #  particular way of basis ordering.
+                basis_ind_dict[bin2dec(basis_set_seed)] = basis_index
+                basis_index += 1
         else:
             # The permute function cannot permute lists for which there is
             #  only one permutation.
@@ -67,7 +87,7 @@ def aubry_andre_block_H(Sx,Sy,Sz,N,h,c,phi=0,J=1):
                         else:
                             k -= 1
                     curr_bs[k],curr_bs[k-1] = curr_bs[k-1],curr_bs[k]
-                    curr_ind = current_j_basis_set.index(curr_bs)
+                    curr_ind = basis_ind_dict[bin2dec(curr_bs)]
                     if curr_ind > i:
                         nz_list.append(curr_ind)
                     k -= 1

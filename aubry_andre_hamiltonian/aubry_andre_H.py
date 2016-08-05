@@ -48,5 +48,5 @@ def aubry_andre_H(Sx,Sy,Sz,N,h,c,phi=0,J=1):
         Sz_product_sum += Sz_k.dot(Sz_k_1)
         del Sz_k
         
-    H = Sz_sum - J*(Sx_product_sum + Sy_product_sum + Sz_product_sum)
+    H = Sz_sum + J*(Sx_product_sum + Sy_product_sum + Sz_product_sum)
     return H 
