@@ -3,7 +3,7 @@ from aubry_andre_common import get_state
 import numpy as np
 from scipy.sparse.linalg import expm
 
-def plot_imbalance_log(spin,N,h,c,phi,time_range_lower_lim,
+def plot_imbalance_time_evo_log(spin,N,h,c,phi,time_range_lower_lim,
                         time_range_upper_lim,sample_size):
     D = int(2*spin+1)**N
     Sx,Sy,Sz = qm.init(spin)
@@ -48,7 +48,7 @@ def plot_imbalance_log(spin,N,h,c,phi,time_range_lower_lim,
                                                   psi_time_evolved))[0,0])
     return 4/N*imbalance_plot,exit_status
 
-def plot_imbalance_lin(spin,N,h,c,phi,time_range_lower_lim,
+def plot_imbalance_time_evo_lin(spin,N,h,c,phi,time_range_lower_lim,
                             time_range_upper_lim,sample_size):
     D = int(2*spin+1)**N
     Sx,Sy,Sz = qm.init(spin)

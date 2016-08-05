@@ -10,7 +10,7 @@ def plot_entropy_time_evo_log(spin,N,h,c,phi,time_range_lower_lim,
     entropy_plot = np.zeros(sample_size)
     init_delta_t,r = qm.get_init_delta_t(time_range_lower_lim,
                         time_range_upper_lim,sample_size)
-    H,psi,exit_status = get_state(Sx,Sy,Sz,N,h,c,phi,J=0)
+    H,psi,exit_status = get_state(Sx,Sy,Sz,N,h,c,phi)
     
     if not exit_status:
         # Plot the first point which does not require time evolution.
@@ -38,7 +38,7 @@ def plot_entropy_time_evo_lin(spin,N,h,c,phi,time_range_lower_lim,
     Sx,Sy,Sz = qm.init(spin)
     entropy_plot = np.zeros(sample_size)
     delta_t = (time_range_upper_lim-time_range_lower_lim)/(sample_size-1)
-    H,psi,exit_status = get_state(Sx,Sy,Sz,N,h,c,phi,J=0)
+    H,psi,exit_status = get_state(Sx,Sy,Sz,N,h,c,phi)
 
     if not exit_status:
         U = expm(-1j*H*delta_t)

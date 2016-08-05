@@ -10,7 +10,7 @@ import sys
 def get_state(Sx,Sy,Sz,N,h,c,phi=0,J=1):
     s = Sx.get_shape()[0]
     D = s**N
-    H = aubry_andre_H(Sx,Sy,Sz,N,h,c,phi=0,J=1)
+    H = aubry_andre_H(Sx,Sy,Sz,N,h,c,phi)
 
     E_max = eigsh(H,k=1,which='LA',maxiter=1e6,return_eigenvectors=False)
     E_min = eigsh(H,k=1,which='SA',maxiter=1e6,return_eigenvectors=False)
