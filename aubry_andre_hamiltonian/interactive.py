@@ -5,7 +5,6 @@ import os,sys
 from entropy import plot_entropy_time_evo_log,plot_entropy_time_evo_lin
 from imbalance import plot_imbalance_time_evo_lin,plot_imbalance_time_evo_log
 from time import time
-# import argparse
 
 def get_plot():
     if program_mode == 'entropy':
