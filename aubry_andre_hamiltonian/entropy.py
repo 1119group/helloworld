@@ -1,18 +1,32 @@
 import quantum_module as qm
-from aubry_andre_common import get_state
+from aubry_andre_block_H import aubry_andre_H_off_diag, aubry_andre_H_diag
+from aubry_andre_common import get_state_blk
 import numpy as np
+from scipy import io
 from scipy.sparse.linalg import expm_multiply, expm
+import os
 
 
 def plot_entropy_time_evo_log(spin, N, h, c, phi, time_range_lower_lim,
                               time_range_upper_lim, sample_size):
-    D = int(2*spin+1)**N
     Sx, Sy, Sz = qm.init(spin)
     entropy_plot = np.zeros(sample_size)
     init_delta_t, r = qm.get_init_delta_t(time_range_lower_lim,
                                           time_range_upper_lim, sample_size)
-    H, psi, exit_status = get_state(Sx, Sy, Sz, N, h, c, phi)
 
+    # Check and see if the off diagonal matrix is saved. If so, load from disk.
+    if os.path.isfile('block_H_off_diag_' + str(N) + 'spins.mat'):
+        H_off_diag = io.loadmat('block_H_off_diag_' +
+                                str(N) + 'spins.mat')['i']
+    else:
+        H_off_diag = aubry_andre_H_off_diag(Sx, Sy, Sz, N)
+        H_off_diag += H_off_diag.transpose()
+        io.savemat('block_H_off_diag_' + str(N) + 'spins', {'i': H_off_diag})
+    H_diag = aubry_andre_H_diag(Sx, Sy, Sz, N, h, c, phi)
+    H = H_diag + H_off_diag
+    H = H.tolil()
+
+    psi, exit_status = get_state_blk(H, N)
     if not exit_status:
         # Plot the first point which does not require time evolution.
         entropy_plot[0] += qm.get_vn_entropy(psi, spin, N, mode='eqsplit')
@@ -38,12 +52,22 @@ def plot_entropy_time_evo_log(spin, N, h, c, phi, time_range_lower_lim,
 
 def plot_entropy_time_evo_lin(spin, N, h, c, phi, time_range_lower_lim,
                               time_range_upper_lim, sample_size):
-    D = int(2*spin+1)**N
     Sx, Sy, Sz = qm.init(spin)
     entropy_plot = np.zeros(sample_size)
     delta_t = (time_range_upper_lim-time_range_lower_lim)/(sample_size-1)
-    H, psi, exit_status = get_state(Sx, Sy, Sz, N, h, c, phi)
 
+    # Check and see if the off diagonal matrix is saved. If so, load from disk.
+    if os.path.isfile('block_H_off_diag_' + str(N) + 'spins.mat'):
+        H_off_diag = io.loadmat('block_H_off_diag_' +
+                                str(N) + 'spins.mat')['i']
+    else:
+        H_off_diag = aubry_andre_H_off_diag(Sx, Sy, Sz, N)
+        H_off_diag += H_off_diag.transpose()
+        io.savemat('block_H_off_diag_' + str(N) + 'spins', {'i': H_off_diag})
+    H_diag = aubry_andre_H_diag(Sx, Sy, Sz, N, h, c, phi)
+    H = H_diag + H_off_diag
+
+    psi, exit_status = get_state_blk(H, N)
     if not exit_status:
         U = expm(-1j*H*delta_t)
 
