@@ -5,8 +5,8 @@ This module provides common functions to do quantum mechanical calculations.
 """
 
 import numpy as np
-from numpy.linalg import eigh, eigvalsh
 from numpy.random import random_sample, randint
+from numpy.linalg import eigvalsh
 from scipy.sparse import dok_matrix, eye, kron, issparse
 from time import time
 import sys
@@ -163,7 +163,7 @@ def get_vn_entropy(psi, spin, N=None, mode='1spin', base='e'):
     S_AB_terms = []
     for i in range(np.shape(red_rho_A)[0]):
         if abs(lamb[i]) < 1e-6:
-            # lim a->0 (alog(a)) = 0. It also removes some minuscule negative 
+            # lim a->0 (alog(a)) = 0. It also removes some minuscule negative
             #  lambda values resulting from rounding errors.
             S_AB_terms.append(0)
         else:
@@ -273,13 +273,15 @@ def next_permutation(l):
     # Step 1: Find tail
     last = n - 1  # tail is from `last` to end
     while last > 0:
-        if l[last - 1] < l[last]: break
+        if l[last - 1] < l[last]:
+            break
         last -= 1
     # Step 2: Increase the number just before tail
     if last > 0:
         small = l[last - 1]
         big = n - 1
-        while l[big] <= small: big -= 1
+        while l[big] <= small:
+            big -= 1
         l[last - 1], l[big] = l[big], small
     # Step 3: Reverse tail
     i = last
