@@ -24,7 +24,7 @@ def get_state(Sx, Sy, Sz, N, h, c, phi=0, J=1):
     for k in range(int(round(0.5 * N))):
         index[k] = 1
 
-    exit_status = False
+    error = False
     while True:
         counter += 1
         zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
@@ -45,9 +45,9 @@ def get_state(Sx, Sy, Sz, N, h, c, phi=0, J=1):
             break
         # Display an error message when no suitable state is found.
         elif counter > zero_Sz_basis_count:
-            exit_status = True
+            error = True
             break
-    return H, psi_0, exit_status
+    return H, psi_0, error
 
 
 def get_state_blk(H, N):
@@ -67,7 +67,7 @@ def get_state_blk(H, N):
         for k in range(int(round(0.5 * N))):
             index[k] = 1
 
-        exit_status = False
+        error = False
         while True:
             counter += 1
             zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
@@ -90,6 +90,6 @@ def get_state_blk(H, N):
             # Regenerate the Hamiltonian after failing to generate any state
             #  for a number of times.
             elif counter > 2 * zero_Sz_basis_count:
-                exit_status = True
+                error = True
                 break
-    return psi, exit_status
+    return psi, error
