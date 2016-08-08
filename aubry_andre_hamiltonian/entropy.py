@@ -61,4 +61,16 @@ def plot_entropy_time_evo_lin(spin, N, h, c, phi, time_range_lower_lim,
 
 
 def plot_entropy_var_h(spin, N, h_lower_lim, h_upper_lim, c, phi, sample_size):
+    #This is just a rough outline...
     h_list = np.linspace(h_lower_lim, h_upper_lim, sample_size)
+    D = int(2 * spin + 1) ** N
+    Sx, Sy, Sz = qm.init(spin)
+    entropy_plot = np.zeros(sample_size)
+
+    for h in h_list:
+        psilist, exit_status = get_0_states(Sx, Sy, Sz, N, h, c, phi)
+        for psi in psilist:
+            entropy_plot[h] += qm.get_vn_entropy(psi, spin, N, mode='eqsplit')
+        entropy_plot[h] /= len(psilist)
+    return entropy_plot, exit_status
+
