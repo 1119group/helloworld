@@ -120,3 +120,20 @@ def get_0_state_blk(H, N):
     # FIXME: not working properly yet
     H, psi, error = init_state(N, H, spin_basis)
     return psi, error
+
+
+def average_adj_gap_ratio(sorted_eigenvalue_list):
+    """
+    Takes a list of eigenvalues that have been sorted low to high, finds the
+    adjusted gap ratio for each set of 3 adjacent eigenvalues and then finds
+    the average adjusted gap ratio.
+    :param sorted_eigenvalue_list:
+    :return adj_gap_ratio:
+    """
+    adj_gap_ratio = 0
+    delta_n_list = np.diff(sorted_eigenvalue_list)
+    for x in range(0, len(delta_n_list) - 1):
+        adj_gap_ratio += min(delta_n_list[x],delta_n_list[x + 1]) /\
+                         max(delta_n_list[x],delta_n_list[x + 1])
+    adj_gap_ratio /= len(delta_n_list) - 1
+    return adj_gap_ratio
