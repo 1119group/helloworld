@@ -1,5 +1,6 @@
 import quantum_module as qm
-from aubry_andre_common import get_0_state_blk, spin2z, generate_H
+from aubry_andre_common import get_0_state_blk, spin2z, generate_H, \
+    average_adj_gap_ratio, average_vn_entropy
 import numpy as np
 from scipy.sparse.linalg import expm_multiply, expm
 
@@ -68,14 +69,14 @@ def plot_entropy_time_evo_lin(spin, N, h, c, phi, time_range_lower_lim,
     return entropy_plot, error
 
 
-def plot_entropy_and_gap_var_h(spin, N, h_lower_lim, h_upper_lim, c, phi, sample_size):
+def plot_entropy_and_gap_var_h(spin, N, hmin, hmax, c, phi, sample_size):
     # This is just a rough outline... FIX THIS LATER
-    h_list = np.linspace(h_lower_lim, h_upper_lim, sample_size)
+    h_list = np.linspace(hmin, hmax, sample_size)
     entropy_plot = np.zeros(sample_size)
     adj_gap_ratio_plot = np.zeros(sample_size)
 
     for h in h_list:
-        psilist, eigenvalues, error = get_0_states(h)
-        entropy_plot[h] = average_vn_entropy(psilist, spin, N)
+        psi_list, eigenvalues, error = get_0_state_blk(h, N)
+        entropy_plot[h] = average_vn_entropy(psi_list, spin, N)
         adj_gap_ratio_plot[h] = average_adj_gap_ratio(eigenvalues)
     return entropy_plot, adj_gap_ratio_plot, error
