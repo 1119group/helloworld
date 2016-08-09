@@ -1,22 +1,91 @@
 import quantum_module as qm
 from aubry_andre_H import aubry_andre_H
+import aubry_andre_block_H as aubryH
 import numpy as np
-from scipy.sparse import dok_matrix
+from scipy.sparse import dok_matrix, lil_matrix
 from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
+from scipy import io
+import os
 
 
-def get_state(Sx, Sy, Sz, N, h, c, phi=0, J=1):
-    s = Sx.get_shape()[0]
-    D = s**N
-    H = aubry_andre_H(Sx, Sy, Sz, N, h, c, phi)
+def spin2z(D, N, psi):
+    """
+    Rewrites a given state psi from the spin basis (the basis of
+    the block diagonalized Hamiltonian) to the conventional
+    Sz product basis.
+    Only works for zero total <Sz>.
+    """
+    # FIXME: serious bugs
+    psi_tz = lil_matrix((D, 1), dtype=complex)
+    j_max = int(round(0.5 * N))
+    blk_sz = int(round(comb(N, j_max)))
+    basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max, 0)
+    for i in basis_dict_0:
+        psi_tz[i, 0] = psi[basis_dict_0[i], 0]
 
+    psi_tz = psi_tz.tocsc()
+    return psi_tz
+
+
+def generate_H(Sx, Sy, Sz, N, h, c, phi):
+    """
+    A function to put together the pieces of a Hamiltonian and
+    generate a full Hamiltonian.
+    """
+    # Check and see if the off diagonal matrix is saved.
+    #  If so, load from disk.
+    if os.path.isfile('block_H_off_diag_' + str(N) + 'spins.mat'):
+        H_off_diag = io.loadmat('block_H_off_diag_' +
+                                str(N) + 'spins.mat')['i']
+    else:
+        H_off_diag = aubryH.aubry_andre_H_off_diag(Sx, Sy, Sz, N)
+        H_off_diag += H_off_diag.transpose()
+        io.savemat('block_H_off_diag_' + str(N) + 'spins', {'i': H_off_diag})
+    H_diag = aubryH.aubry_andre_H_diag(Sx, Sy, Sz, N, h, c, phi)
+    H = H_diag + H_off_diag
+    return H
+
+
+def energy_density(psi, H, E):
+    exp_val = psi.conjtransp().dot(H.dot(psi))
+    e = (exp_val[0, 0] - E[0]) / (E[-1] - E[0])
+    return e
+
+
+def z_basis(N, dummy):
+    """Returns a state psi in the Sz product state basis."""
+    dim = 2
+    D = dim**N
+    s = 0
+    for k in range(N):
+        s += int(index[k] * 2**k)
+    psi_0 = dok_matrix((D, 1), dtype=complex)
+    psi_0[s, 0] = 1
+    return psi_0
+
+
+def spin_basis(N, counter):
+    """Returns a state psi in the spin basis."""
+    D = 2**N
+    zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
+    psi_0 = dok_matrix((D, 1), dtype=complex)
+    blk_pos = int(round(0.5 * (D - zero_Sz_basis_count)))
+    psi_0[blk_pos + counter - 1, 0] = 1
+    return psi_0
+
+
+def init_state(N, H, basis):
+    """
+    Finds the initial state psi for a given Hamiltonian.
+    "basis" is a function.
+    """
+    global index
     E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
     E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
     E = np.append(E_min, E_max)
 
-    # Create initial state.
-    counter = 0
+    zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
     # Create initial state psi with magnetization of 0. Here we first form
     #  a binary number which has an equal number of 1's and
     #  0's.
@@ -25,22 +94,13 @@ def get_state(Sx, Sy, Sz, N, h, c, phi=0, J=1):
         index[k] = 1
 
     error = False
+    counter = 0
     while True:
         counter += 1
-        zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
         index = qm.permute_one_zero(index)
-        # Then we convert the binary number into decimal and put a 1
-        #  at the spot indicated by the binary into a zero vector. That
-        #  represents a state with an equal number of up and down spins
-        #  -- zero magnetization.
-        s = 0
-        for k in range(N):
-            s += int(index[k] * 2**k)
-        psi_0 = dok_matrix((D, 1), complex)
-        psi_0[s, 0] = 1
+        psi_0 = basis(N, counter)
         # Make sure psi's energy density is very close to 0.5.
-        exp_val = psi_0.conjtransp().dot(H.dot(psi_0))
-        e = (exp_val[0, 0] - E[0]) / (E[-1] - E[0])
+        e = energy_density(psi_0, H, E)
         if abs(e - 0.5) < 0.001:
             break
         # Display an error message when no suitable state is found.
@@ -50,46 +110,13 @@ def get_state(Sx, Sy, Sz, N, h, c, phi=0, J=1):
     return H, psi_0, error
 
 
-def get_state_blk(H, N):
-    D = H.get_shape()[0]
-    redo = True
-    while redo:
-        E_max, eigvects_max = eigsh(H, k=1, which='LA', maxiter=1e6)
-        E_min, eigvects_min = eigsh(H, k=1, which='SA', maxiter=1e6)
-        E = np.append(E_min, E_max)
+def get_state(Sx, Sy, Sz, N, h, c, phi=0, J=1):
+    H = aubry_andre_H(Sx, Sy, Sz, N, h, c, phi)
+    H, psi_0, error = init_state(N, H, z_basis)
+    return H, psi_0, error
 
-        # Create initial state.
-        counter = 0
-        # Create initial state psi with magnetization of 0. Here we first form
-        #  a binary number which has an equal number of 1's and
-        #  0's.
-        index = np.zeros(N)
-        for k in range(int(round(0.5 * N))):
-            index[k] = 1
 
-        error = False
-        while True:
-            counter += 1
-            zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
-            index = qm.permute_one_zero(index)
-            # Then we convert the binary number into decimal and put a 1
-            #  at the spot indicated by the binary into a zero vector. That
-            #  represents a state with an equal number of up and down spins
-            #  -- zero magnetization.
-            s = 0
-            for k in range(N):
-                s += int(index[k] * 2**k)
-            psi = dok_matrix((D, 1), complex)
-            psi[s, 0] = 1
-            # Make sure psi's energy density is very close to 0.5.
-            exp_val = psi.transpose().dot(H.dot(psi))
-            e = (np.real(exp_val[0, 0]) - E[0]) / (E[-1] - E[0])
-            if abs(e - 0.5) < 0.001:
-                redo = False
-                break
-            # Regenerate the Hamiltonian after failing to generate any state
-            #  for a number of times.
-            elif counter > 2 * zero_Sz_basis_count:
-                error = True
-                break
+def get_0_state_blk(H, N):
+    # FIXME: not working properly yet
+    H, psi, error = init_state(N, H, spin_basis)
     return psi, error
