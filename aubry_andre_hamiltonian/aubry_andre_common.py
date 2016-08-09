@@ -137,3 +137,17 @@ def average_adj_gap_ratio(sorted_eigenvalue_list):
                          max(delta_n_list[x],delta_n_list[x + 1])
     adj_gap_ratio /= len(delta_n_list) - 1
     return adj_gap_ratio
+
+
+def average_vn_entropy(list_of_states, spin, N):
+    """
+    Take a list of states, find the Von Neumann entropy for each state and then
+    find the average entropy for the set.
+    :param list_of_states:
+    :return avg_vn_entropy:
+    """
+    avg_vn_entropy = 0
+    for psi in list_of_states:
+        avg_vn_entropy += qm.get_vn_entropy(psi, spin, N, mode='eqsplit')
+    avg_vn_entropy /= np.shape(list_of_states)[1]
+    return avg_vn_entropy
