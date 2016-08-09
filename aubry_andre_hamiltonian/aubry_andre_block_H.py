@@ -106,7 +106,7 @@ def blk_diag(Sx, Sy, Sz, N, h, c, total_Sz, phi=0):
     # Create the field
     field = np.empty(N)
     for i in range(N):
-        field[i] = h * np.cos(c * 2 * np.pi * i + phi)
+        field[i] = h * np.cos(c * 2 * np.pi * (i + 1) + phi)
 
     H_curr_blk_diag = lil_matrix((blk_sz, blk_sz), dtype=complex)
 
