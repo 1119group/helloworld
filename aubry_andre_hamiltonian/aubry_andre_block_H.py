@@ -23,8 +23,14 @@ def bin2dec(l):
 
 
 def basis_set(N, blk_sz, j_max, current_j):
-    """Returns a list of the full set of basis for the current total <Sz>"""
+    """
+    Returns a list of the full set of basis for the current total <Sz>.
+    "blk_sz" is the length of the block of the Hamiltonian block that we
+    are seeking the basis set for.
+    "current_j" is the total <Sz> for the current block.
+    """
     # Find all the binary representations of the current j.
+    D = 2**N
     basis_set_seed = [0] * N
     basis_ind_dict = {}
     basis_index = 0
@@ -38,7 +44,7 @@ def basis_set(N, blk_sz, j_max, current_j):
             # Create a dictionary that links the decimal
             #  representation of a basis and its position in this
             #  particular way of basis ordering.
-            basis_ind_dict[bin2dec(basis_set_seed)] = basis_index
+            basis_ind_dict[D - 1 - bin2dec(basis_set_seed)] = basis_index
             basis_index += 1
     else:
         # The permute function cannot permute lists for which there is
@@ -50,14 +56,13 @@ def basis_set(N, blk_sz, j_max, current_j):
 def blk_off_diag(Sx, Sy, Sz, N, total_Sz, J=1):
     """
     Privides the upper half of the off_diagonal elements of one
-    block of the Hamiltonian corresponding to the given total Sz. 
+    block of the Hamiltonian corresponding to the given total Sz.
     Returns an upper triangle sparse matrix.
     "total_Sz" is the total spin of all the basis states in the current block.
     "pos" is the i or j coordinates of the upper left element of
     the current block in the full Hamiltonian.
-
-
     """
+    D = Sx.get_shape()[0]**N
     # Side length of the current block.
     j_max = int(round(0.5 * N))
     blk_sz = int(round(comb(N, j_max - total_Sz)))
@@ -77,7 +82,7 @@ def blk_off_diag(Sx, Sy, Sz, N, total_Sz, J=1):
                 else:
                     k -= 1
             curr_bs[k], curr_bs[k - 1] = curr_bs[k - 1], curr_bs[k]
-            curr_ind = basis_ind_dict[bin2dec(curr_bs)]
+            curr_ind = basis_ind_dict[D - 1 - bin2dec(curr_bs)]
             if curr_ind > i:
                 nz_list.append(curr_ind)
             k -= 1
@@ -86,16 +91,15 @@ def blk_off_diag(Sx, Sy, Sz, N, total_Sz, J=1):
     return H_curr_blk_off_diag
 
 
-def blk_diag(Sx, Sy, Sz, N, h, c, total_Sz, pos, phi=0):
-    """Provides the diagonal entries of a block of the Hamiltonian 
+def blk_diag(Sx, Sy, Sz, N, h, c, total_Sz, phi=0):
+    """
+    Provides the diagonal entries of a block of the Hamiltonian
     corresponding to the given total Sz.
     "total_Sz" is the total spin of all the basis states in the current block.
-    "pos" is the i or j coordinates of the upper left element of the
-    current block in the full Hamiltonian.
     """
     # Side length of the current block.
     j_max = int(round(0.5 * N))
-    blk_sz = int(round(comb(N, j_max - total_Sz)))
+    blk_sz = int(round(comb(N, int(j_max - total_Sz))))
     current_j_basis_set, basis_ind_dict = basis_set(N, blk_sz,
                                                     j_max, total_Sz)
 
@@ -122,7 +126,7 @@ def blk_diag(Sx, Sy, Sz, N, h, c, total_Sz, pos, phi=0):
             diff -= current_j_basis_set[i][N - 2 - k]
             tot += abs(diff)
         imb = N - 2 * tot
-        H_curr_blk_diag[i, i] = 1 * imb * 0.25 - 0.5 * h_sum
+        H_curr_blk_diag[i, i] = imb * 0.25 + 0.5 * h_sum
     return H_curr_blk_diag
 
 
@@ -139,10 +143,9 @@ def aubry_andre_H_off_diag(Sx, Sy, Sz, N, J=1):
     while current_j >= -1 * j_max:
         blk_sz = int(round(comb(N, j_max - current_j)))
         if blk_sz != 1:
+            H_j_off_diag = blk_off_diag(Sx, Sy, Sz, N, current_j, J)
             H_off_diag[pos:pos + blk_sz,
-                       pos:pos + blk_sz] += blk_off_diag(Sx, Sy, Sz, N,
-                                                         current_j,
-                                                         J=1)[:, :]
+                       pos:pos + blk_sz] += H_j_off_diag
         pos += blk_sz
         current_j -= 1
     return H_off_diag
@@ -150,16 +153,16 @@ def aubry_andre_H_off_diag(Sx, Sy, Sz, N, J=1):
 
 def aubry_andre_H_diag(Sx, Sy, Sz, N, h, c, phi=0):
     """Provides the diagonal elements of the Hamiltonian."""
-    D = Sx.get_shape()[0]**N
+    D = 2**N
     H_diag = lil_matrix((D, D), dtype=complex)
     j_max = int(round(0.5 * N))
     current_j = j_max
     pos = 0
     while current_j >= -1 * j_max:
-        blk_sz = int(round(comb(N, j_max - current_j)))
+        blk_sz = int(round(comb(N, int(j_max - current_j))))
+        H_j_diag = blk_diag(Sx, Sy, Sz, N, h, c, current_j, phi)
         H_diag[pos:pos + blk_sz,
-               pos:pos + blk_sz] += blk_diag(Sx, Sy, Sz, N, h, c, current_j,
-                                             pos, phi=0)[:, :]
+               pos:pos + blk_sz] += H_j_diag
         pos += blk_sz
         current_j -= 1
     return H_diag
