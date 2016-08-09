@@ -152,3 +152,34 @@ def get_0_state_blk(H, N):
     """
     H, psi, error = init_state(N, H, spin_basis)
     return psi, error
+
+
+def average_adj_gap_ratio(sorted_eigenvalue_list):
+    """
+    Takes a list of eigenvalues that have been sorted low to high, finds the
+    adjusted gap ratio for each set of 3 adjacent eigenvalues and then finds
+    the average adjusted gap ratio.
+    :param sorted_eigenvalue_list:
+    :return adj_gap_ratio:
+    """
+    adj_gap_ratio = 0
+    delta_n_list = np.diff(sorted_eigenvalue_list)
+    for x in range(0, len(delta_n_list) - 1):
+        adj_gap_ratio += min(delta_n_list[x],delta_n_list[x + 1]) /\
+                         max(delta_n_list[x],delta_n_list[x + 1])
+    adj_gap_ratio /= len(delta_n_list) - 1
+    return adj_gap_ratio
+
+
+def average_vn_entropy(list_of_states, spin, N):
+    """
+    Take a list of states, find the Von Neumann entropy for each state and then
+    find the average entropy for the set.
+    :param list_of_states:
+    :return avg_vn_entropy:
+    """
+    avg_vn_entropy = 0
+    for psi in list_of_states:
+        avg_vn_entropy += qm.get_vn_entropy(psi, spin, N, mode='eqsplit')
+    avg_vn_entropy /= np.shape(list_of_states)[1]
+    return avg_vn_entropy
