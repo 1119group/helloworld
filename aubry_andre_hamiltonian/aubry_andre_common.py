@@ -16,7 +16,28 @@ def spin2z(D, N, psi):
     Sz product basis.
     Only works for zero total <Sz>.
     """
-    # FIXME: serious bugs
+    psi_tz = lil_matrix((D, 1), dtype=complex)
+    j_max = int(round(0.5 * N))
+    blk_sz = int(round(comb(N, j_max)))
+    blk_pos = int(round(0.5 * (D - blk_sz)))
+    basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max, 0)
+    for i in basis_dict_0:
+        psi_tz[i, 0] = psi[basis_dict_0[i] + blk_pos, 0]
+
+    psi_tz = psi_tz.tocsc()
+    return psi_tz
+
+
+def spin2z_0(D, N, psi):
+    """
+    Rewrites a given state psi from the spin basis (the basis of
+    the block diagonalized Hamiltonian) to the conventional
+    Sz product basis.
+    This version takes in a truncated psi in the zero spin basis and
+    reconstruct the full psi vector in the Sz product basis.
+    Only works for zero total <Sz>.
+    """
+    global basis_set_0, basis_dict_0
     psi_tz = lil_matrix((D, 1), dtype=complex)
     j_max = int(round(0.5 * N))
     blk_sz = int(round(comb(N, j_max)))
@@ -71,7 +92,15 @@ def spin_basis(N, counter):
     zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
     psi_0 = dok_matrix((D, 1), dtype=complex)
     blk_pos = int(round(0.5 * (D - zero_Sz_basis_count)))
-    psi_0[blk_pos + counter - 1, 0] = 1
+    psi_0[blk_pos + counter, 0] = 1
+    return psi_0
+
+
+def spin_basis_0(N, counter):
+    """Returns a state psi in the spin basis."""
+    zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
+    psi_0 = dok_matrix((zero_Sz_basis_count, 1), dtype=complex)
+    psi_0[counter, 0] = 1
     return psi_0
 
 
@@ -96,15 +125,16 @@ def init_state(N, H, basis):
     error = False
     counter = 0
     while True:
-        counter += 1
         index = qm.permute_one_zero(index)
         psi_0 = basis(N, counter)
         # Make sure psi's energy density is very close to 0.5.
         e = energy_density(psi_0, H, E)
         if abs(e - 0.5) < 0.001:
             break
+
+        counter += 1
         # Display an error message when no suitable state is found.
-        elif counter > zero_Sz_basis_count:
+        if counter > zero_Sz_basis_count:
             error = True
             break
     return H, psi_0, error
@@ -117,6 +147,8 @@ def get_state(Sx, Sy, Sz, N, h, c, phi=0, J=1):
 
 
 def get_0_state_blk(H, N):
-    # FIXME: not working properly yet
+    """
+    "H" is only the center block of the Hamiltonian.
+    """
     H, psi, error = init_state(N, H, spin_basis)
     return psi, error
