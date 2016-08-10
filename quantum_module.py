@@ -76,7 +76,7 @@ def exp_value(S, psi):
 
     exp_val = psi.transpose().conjugate().dot(S.dot(psi))
     exp_value = np.real(exp_val[0, 0])
-    return exp_value
+    return float(exp_value)
 
 
 def sort_eigs(E, V):
