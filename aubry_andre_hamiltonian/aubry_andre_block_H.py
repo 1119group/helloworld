@@ -73,25 +73,23 @@ def basis_set(N, blk_sz, j_max, current_j):
 
 def iowrapper(func, fname, options):
     """
-    Wrapper for I/O for smoother operations. Works only with functions
-    that produce triangular sparse matrices which could be save with the
-    scipy.savemat function.
+    Wrapper for I/O operations to enable loading and dumping cache to disk.
+    The data in question must be a scipy sparse matrix for this function
+    to work properly.
     "func" is the function to be wrapped.
     "fname" is the name of the file to be saved/loaded.
     "options" is a list of parameters to be passed on to the function.
     """
-    # Check and see if the off diagonal matrix is saved.
-    #  If so, load from disk.
+    # TODO: Move to quantum_module in due time
     if os.path.isfile(fname):
         operator = io.loadmat(fname)['i']
     else:
         operator = func(options)
-        operator += operator.transpose()
         io.savemat(fname, {'i': operator}, appendmat=False)
     return operator
 
 
-def blk_off_diag_nocache(options):
+def blk_off_diag_ut_nocache(options):
     """
     Privides the upper half of the off_diagonal elements of one
     block of the Hamiltonian corresponding to the given total Sz.
@@ -131,18 +129,33 @@ def blk_off_diag_nocache(options):
     return H_curr_blk_off_diag
 
 
-def blk_off_diag(Sx, Sy, Sz, N, total_Sz, J=1):
+def blk_off_diag_ut(Sx, Sy, Sz, N, total_Sz, J=1):
     """
     Privides the off_diagonal elements of one block of the Hamiltonian
-    corresponding to the given total Sz.
+    corresponding to the given total Sz. Provides only an upper triangular
+    matrix.
     "total_Sz" is the total spin of all the basis states in the current block.
     "pos" is the i or j coordinates of the upper left element of
     the current block in the full Hamiltonian.
     """
     options = [Sx, Sy, Sz, N, total_Sz, J]
-    fname = 'cache/block_H_off_diag_' + str(N) + 'spins_'
+    fname = 'cache/H_block_off_diag_ut' + str(N) + 'spins_J' + str(J) + '_'
     fname += str(total_Sz) + 'Sz.mat'
-    H_curr_blk_off_diag = iowrapper(blk_off_diag_nocache, fname, options)
+    H_curr_blk_off_diag_ut = iowrapper(blk_off_diag_ut_nocache, fname, options)
+    return H_curr_blk_off_diag_ut
+
+
+def blk_off_diag(Sx, Sy, Sz, N, total_Sz, J=1):
+    """
+    Privides the off_diagonal elements of one block of the Hamiltonian
+    corresponding to the given total Sz. Provides only an upper triangular
+    matrix.
+    "total_Sz" is the total spin of all the basis states in the current block.
+    "pos" is the i or j coordinates of the upper left element of
+    the current block in the full Hamiltonian.
+    """
+    H_curr_blk_off_diag = blk_off_diag_ut(Sx, Sy, Sz, N, total_Sz, J)
+    H_curr_blk_off_diag += H_curr_blk_off_diag.transpose()
     return H_curr_blk_off_diag
 
 
@@ -192,10 +205,11 @@ def blk_full(Sx, Sy, Sz, N, h, c, total_Sz, phi=0, J=1):
     return H_curr_blk_diag + H_curr_blk_off_diag
 
 
-def aubry_andre_H_off_diag(Sx, Sy, Sz, N, J=1):
+def aubry_andre_H_off_diag_nocache(options):
     """
     Provides the off-diagonal elements of the Hamiltonian.
     """
+    [Sx, Sy, Sz, N, J] = options
     D = Sx.get_shape()[0]**N
     H_off_diag = lil_matrix((D, D), dtype=complex)
     j_max = int(round(0.5 * N))
@@ -212,8 +226,19 @@ def aubry_andre_H_off_diag(Sx, Sy, Sz, N, J=1):
     return H_off_diag
 
 
-def aubry_andre_H_diag(Sx, Sy, Sz, N, h, c, phi=0):
-    """Provides the diagonal elements of the Hamiltonian."""
+def aubry_andre_H_off_diag(Sx, Sy, Sz, N, J=1):
+    options = [Sx, Sy, Sz, N, J]
+    fname = 'cache/aubry_H_off_diag_' + str(N) + 'spins_J' + str(J) + '.mat'
+    H_off_diag = iowrapper(aubry_andre_H_off_diag_nocache, fname, options)
+    return H_off_diag
+
+
+def aubry_andre_H_diag_nocache(options):
+    """
+    Provides the diagonal elements of the Hamiltonian. This version
+    does not save/load cache from disk.
+    """
+    [Sx, Sy, Sz, N, h, c, phi] = options
     D = 2**N
     H_diag = lil_matrix((D, D), dtype=complex)
     j_max = int(round(0.5 * N))
@@ -227,6 +252,15 @@ def aubry_andre_H_diag(Sx, Sy, Sz, N, h, c, phi=0):
         pos += blk_sz
         current_j -= 1
     return H_diag
+
+
+def aubry_andre_H_diag(Sx, Sy, Sz, N, h, c, phi=0):
+    """Provides the diagonal elements of the Hamiltonian."""
+    options = [Sx, Sy, Sz, N, h, c, phi]
+    fname = 'cache/aubry_H_diag_' + str(N) + 'spins' + '_h' + str(h)
+    fname += '_c' + str(c) + '_phi' + str(phi) + '.mat'
+    H_off_diag = iowrapper(aubry_andre_H_diag_nocache, fname, options)
+    return H_off_diag
 
 
 def aubry_andre_H(Sx, Sy, Sz, N, h, c, phi):
