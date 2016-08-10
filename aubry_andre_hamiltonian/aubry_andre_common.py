@@ -165,7 +165,7 @@ def init_state(N, H, basis):
 
         counter += 1
         # Display an error message when no suitable state is found.
-        if counter > zero_Sz_basis_count:
+        if counter >= zero_Sz_basis_count:
             error = True
             break
     return H, psi_0, error
