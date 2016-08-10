@@ -99,8 +99,8 @@ def blk_off_diag_ut_nocache(options):
     the current block in the full Hamiltonian.
     This function does not save the results on disk.
     """
-    [Sx, Sy, Sz, N, total_Sz, J] = options
-    D = Sx.get_shape()[0]**N
+    [N, total_Sz, J] = options
+    D = 2**N
     # Side length of the current block.
     j_max = int(round(0.5 * N))
     blk_sz = int(round(comb(N, j_max - total_Sz)))
@@ -129,7 +129,7 @@ def blk_off_diag_ut_nocache(options):
     return H_curr_blk_off_diag
 
 
-def blk_off_diag_ut(Sx, Sy, Sz, N, total_Sz, J=1):
+def blk_off_diag_ut(N, total_Sz, J=1):
     """
     Privides the off_diagonal elements of one block of the Hamiltonian
     corresponding to the given total Sz. Provides only an upper triangular
@@ -138,14 +138,14 @@ def blk_off_diag_ut(Sx, Sy, Sz, N, total_Sz, J=1):
     "pos" is the i or j coordinates of the upper left element of
     the current block in the full Hamiltonian.
     """
-    options = [Sx, Sy, Sz, N, total_Sz, J]
+    options = [N, total_Sz, J]
     fname = 'cache/H_block_off_diag_ut' + str(N) + 'spins_J' + str(J) + '_'
     fname += str(total_Sz) + 'Sz.mat'
     H_curr_blk_off_diag_ut = iowrapper(blk_off_diag_ut_nocache, fname, options)
     return H_curr_blk_off_diag_ut
 
 
-def blk_off_diag(Sx, Sy, Sz, N, total_Sz, J=1):
+def blk_off_diag(N, total_Sz, J=1):
     """
     Privides the off_diagonal elements of one block of the Hamiltonian
     corresponding to the given total Sz. Provides only an upper triangular
@@ -154,12 +154,12 @@ def blk_off_diag(Sx, Sy, Sz, N, total_Sz, J=1):
     "pos" is the i or j coordinates of the upper left element of
     the current block in the full Hamiltonian.
     """
-    H_curr_blk_off_diag = blk_off_diag_ut(Sx, Sy, Sz, N, total_Sz, J)
+    H_curr_blk_off_diag = blk_off_diag_ut(N, total_Sz, J)
     H_curr_blk_off_diag += H_curr_blk_off_diag.transpose()
     return H_curr_blk_off_diag
 
 
-def blk_diag(Sx, Sy, Sz, N, h, c, total_Sz, phi=0):
+def blk_diag(N, h, c, total_Sz, phi=0):
     """
     Provides the diagonal entries of a block of the Hamiltonian
     corresponding to the given total Sz.
@@ -198,10 +198,10 @@ def blk_diag(Sx, Sy, Sz, N, h, c, total_Sz, phi=0):
     return H_curr_blk_diag
 
 
-def blk_full(Sx, Sy, Sz, N, h, c, total_Sz, phi=0, J=1):
+def blk_full(N, h, c, total_Sz, phi=0, J=1):
     """Generates block of the Hamiltonian for a specific total <Sz>."""
-    H_curr_blk_diag = blk_diag(Sx, Sy, Sz, N, h, c, total_Sz, phi)
-    H_curr_blk_off_diag = blk_off_diag(Sx, Sy, Sz, N, total_Sz, J)
+    H_curr_blk_diag = blk_diag(N, h, c, total_Sz, phi)
+    H_curr_blk_off_diag = blk_off_diag(N, total_Sz, J)
     return H_curr_blk_diag + H_curr_blk_off_diag
 
 
@@ -209,8 +209,8 @@ def aubry_andre_H_off_diag_nocache(options):
     """
     Provides the off-diagonal elements of the Hamiltonian.
     """
-    [Sx, Sy, Sz, N, J] = options
-    D = Sx.get_shape()[0]**N
+    [N, J] = options
+    D = 2**N
     H_off_diag = lil_matrix((D, D), dtype=complex)
     j_max = int(round(0.5 * N))
     current_j = j_max
@@ -218,7 +218,7 @@ def aubry_andre_H_off_diag_nocache(options):
     while current_j >= -1 * j_max:
         blk_sz = int(round(comb(N, j_max - current_j)))
         if blk_sz != 1:
-            H_j_off_diag = blk_off_diag(Sx, Sy, Sz, N, current_j, J)
+            H_j_off_diag = blk_off_diag(N, current_j, J)
             H_off_diag[pos:pos + blk_sz,
                        pos:pos + blk_sz] += H_j_off_diag
         pos += blk_sz
@@ -226,8 +226,8 @@ def aubry_andre_H_off_diag_nocache(options):
     return H_off_diag
 
 
-def aubry_andre_H_off_diag(Sx, Sy, Sz, N, J=1):
-    options = [Sx, Sy, Sz, N, J]
+def aubry_andre_H_off_diag(N, J=1):
+    options = [N, J]
     fname = 'cache/aubry_H_off_diag_' + str(N) + 'spins_J' + str(J) + '.mat'
     H_off_diag = iowrapper(aubry_andre_H_off_diag_nocache, fname, options)
     return H_off_diag
@@ -238,7 +238,7 @@ def aubry_andre_H_diag_nocache(options):
     Provides the diagonal elements of the Hamiltonian. This version
     does not save/load cache from disk.
     """
-    [Sx, Sy, Sz, N, h, c, phi] = options
+    [N, h, c, phi] = options
     D = 2**N
     H_diag = lil_matrix((D, D), dtype=complex)
     j_max = int(round(0.5 * N))
@@ -246,7 +246,7 @@ def aubry_andre_H_diag_nocache(options):
     pos = 0
     while current_j >= -1 * j_max:
         blk_sz = int(round(comb(N, int(j_max - current_j))))
-        H_j_diag = blk_diag(Sx, Sy, Sz, N, h, c, current_j, phi)
+        H_j_diag = blk_diag(N, h, c, current_j, phi)
         H_diag[pos:pos + blk_sz,
                pos:pos + blk_sz] += H_j_diag
         pos += blk_sz
@@ -254,21 +254,21 @@ def aubry_andre_H_diag_nocache(options):
     return H_diag
 
 
-def aubry_andre_H_diag(Sx, Sy, Sz, N, h, c, phi=0):
+def aubry_andre_H_diag(N, h, c, phi=0):
     """Provides the diagonal elements of the Hamiltonian."""
-    options = [Sx, Sy, Sz, N, h, c, phi]
+    options = [N, h, c, phi]
     fname = 'cache/aubry_H_diag_' + str(N) + 'spins' + '_h' + str(h)
     fname += '_c' + str(c) + '_phi' + str(phi) + '.mat'
     H_off_diag = iowrapper(aubry_andre_H_diag_nocache, fname, options)
     return H_off_diag
 
 
-def aubry_andre_H(Sx, Sy, Sz, N, h, c, phi):
+def aubry_andre_H(N, h, c, phi):
     """
     A function to put together the pieces of a Hamiltonian and
     generate a full Hamiltonian.
     """
-    H_off_diag = aubry_andre_H_off_diag(Sx, Sy, Sz, N)
-    H_diag = aubry_andre_H_diag(Sx, Sy, Sz, N, h, c, phi)
+    H_off_diag = aubry_andre_H_off_diag(N)
+    H_diag = aubry_andre_H_diag(N, h, c, phi)
     H = H_diag + H_off_diag
     return H
