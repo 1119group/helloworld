@@ -1,8 +1,9 @@
 import quantum_module as qm
-from aubry_andre_common import get_0_state_blk, spin2z, generate_H, \
+from aubry_andre_common import get_0_state_blk, spin2z, \
     average_adj_gap_ratio, average_vn_entropy
 import numpy as np
 from scipy.sparse.linalg import expm_multiply, expm
+import aubry_andre_block_H as aubryH
 
 
 def plot_entropy_time_evo_log(spin, N, h, c, phi, time_range_lower_lim,
@@ -12,7 +13,7 @@ def plot_entropy_time_evo_log(spin, N, h, c, phi, time_range_lower_lim,
     entropy_plot = np.zeros(sample_size)
     init_delta_t, r = qm.get_init_delta_t(time_range_lower_lim,
                                           time_range_upper_lim, sample_size)
-    H = generate_H(Sx, Sy, Sz, N, h, c, phi)
+    H = aubryH.aubry_andre_H(Sx, Sy, Sz, N, h, c, phi)
     psi, error = get_0_state_blk(H, N)
 
     # Rewrite psi in the Sz basis
@@ -47,7 +48,7 @@ def plot_entropy_time_evo_lin(spin, N, h, c, phi, time_range_lower_lim,
     Sx, Sy, Sz = qm.init(spin)
     entropy_plot = np.zeros(sample_size)
     delta_t = (time_range_upper_lim - time_range_lower_lim)/(sample_size - 1)
-    H = generate_H(Sx, Sy, Sz, N, h, c, phi)
+    H = aubryH.aubry_andre_H(Sx, Sy, Sz, N, h, c, phi)
     psi, error = get_0_state_blk(H, N)
 
     if not error:
