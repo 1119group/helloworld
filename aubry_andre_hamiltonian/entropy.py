@@ -1,6 +1,6 @@
 import quantum_module as qm
-from aubry_andre_common import get_state_blk_full, spin2z, \
-    average_adj_gap_ratio, average_vn_entropy, recast, get_state_blk
+from aubry_andre_common import spin2z, average_adj_gap_ratio, \
+    average_vn_entropy, recast, get_state_blk, gen_psis_and_eigvs, spin_basis_0
 import numpy as np
 from scipy.sparse.linalg import expm_multiply, expm
 import aubry_andre_block_H as aubryH
@@ -78,14 +78,20 @@ def plot_entropy_time_evo_lin(spin, N, h, c, phi, time_range_lower_lim,
     return entropy_plot, error
 
 
-def plot_entropy_and_gap_var_h(spin, N, hmin, hmax, c, phi, sample_size):
+def plot_entropy_and_gap_var_h(spin, N, hmin, hmax, c, phi, sample_size,
+                               num_psis):
     # This is just a rough outline... FIX THIS LATER
     h_list = np.linspace(hmin, hmax, sample_size)
     entropy_plot = np.zeros(sample_size)
     adj_gap_ratio_plot = np.zeros(sample_size)
-
-    for h in h_list:
-        psi_list, eigenvalues, error = get_state_blk_full(h, N)
-        entropy_plot[h] = average_vn_entropy(psi_list, spin, N)
-        adj_gap_ratio_plot[h] = average_adj_gap_ratio(eigenvalues)
+    error = False
+    for i in range(len(h_list)):
+        H = aubryH.blk_full(N, h_list[i], c, 0, phi).tocsc()
+        H, psis, eigvs, error = gen_psis_and_eigvs(N, H, spin_basis_0,
+                                                   num_psis)
+        entropy_plot[i] = average_vn_entropy(psis, spin, N)
+        eigvs.sort()
+        print("eigvs")
+        print(eigvs)
+        adj_gap_ratio_plot[i] = average_adj_gap_ratio(eigvs)
     return entropy_plot, adj_gap_ratio_plot, error
