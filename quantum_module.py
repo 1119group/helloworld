@@ -373,6 +373,9 @@ def sec_to_human_readable_format(time):
     return elapsed_time
 
 
+# The following functions are DEPRECATED and contains unfixed bugs.
+#  Do not use. Use the Timer class instead.
+
 def show_progress(start_time, iteration, total, barLength=25):
     """
     Prints the progress on screen. "start_time" is the the start time of the
