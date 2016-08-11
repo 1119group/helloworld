@@ -29,20 +29,20 @@ class Timer():
         "show_elapsed" controls whether the final elapsed time is shown
         after the program finishes. The default is "True."
         """
-        self.start_time = time.time()
+        self.__start_time = time.time()
         self.iteration = 0
         self.total = total
         self.barlength = barlength
         self.show_elapsed = show_elapsed
-        self.show_progress()
+        self.__show_progress()
 
-    def update_progress(self):
+    def __update_progress(self):
         """
         Increments self.iteration by 1 every time this method is called.
         """
         self.iteration += 1
 
-    def show_progress(self):
+    def __show_progress(self):
         """
         Shows the progress bar on screen. When being called after the
         first time, it updates the progress bar.
@@ -53,7 +53,7 @@ class Timer():
             percent = 0
         else:
             # Calculate time used for progress report purposes.
-            elapsed = time.time() - self.start_time
+            elapsed = time.time() - self.__start_time
             ET_sec = elapsed / (self.iteration) * (self.total - self.iteration)
             ET = sec_to_human_readable_format(ET_sec)
 
@@ -73,7 +73,7 @@ class Timer():
 
     def show_elapsed_time(self):
         """Prints the total elapsed time."""
-        elapsed = time.time() - self.start_time
+        elapsed = time.time() - self.__start_time
         elapsed_time = sec_to_human_readable_format(elapsed)
         print("\nTime elapsed: " + elapsed_time)
 
@@ -81,7 +81,7 @@ class Timer():
         """Prints the progress on screen"""
         # Update the progress.
         if self.iteration < self.total:
-            self.update_progress()
-            self.show_progress()
+            self.__update_progress()
+            self.__show_progress()
         if self.iteration == self.total and self.show_elapsed:
             self.show_elapsed_time()
