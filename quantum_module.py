@@ -373,7 +373,7 @@ def sec_to_human_readable_format(time):
     return elapsed_time
 
 
-# The following functions are DEPRECATED and contains unfixed bugs.
+# The following functions are DEPRECATED and contain unfixed bugs.
 #  Do not use. Use the Timer class instead.
 
 def show_progress(start_time, iteration, total, barLength=25):
