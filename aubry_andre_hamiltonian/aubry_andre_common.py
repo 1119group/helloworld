@@ -99,7 +99,7 @@ def recast(N, psi_short):
 def energy_density(psi, H, E):
     ev = qm.exp_value(H, psi)
     e = (ev - E[0]) / (E[-1] - E[0])
-    return e
+    return e, ev
 
 
 def z_basis(N, dummy):
@@ -159,7 +159,7 @@ def init_state(N, H, basis):
         index = qm.permute_one_zero(index)
         psi_0 = basis(N, counter)
         # Make sure psi's energy density is very close to 0.5.
-        e = energy_density(psi_0, H, E)
+        e, ev = energy_density(psi_0, H, E)
         if abs(e - 0.5) < 0.001:
             break
 
@@ -222,6 +222,56 @@ def average_vn_entropy(list_of_states, spin, N):
     """
     avg_vn_entropy = 0
     for psi in list_of_states:
+        print("psi")
+        print(psi)
         avg_vn_entropy += qm.get_vn_entropy(psi, spin, N, mode='eqsplit')
-    avg_vn_entropy /= np.shape(list_of_states)[1]
+    avg_vn_entropy /= len(list_of_states)
     return avg_vn_entropy
+
+
+def gen_psis_and_eigvs(N, H, basis, num_psis):
+    """
+    Finds the initial state psi for a given Hamiltonian.
+    "basis" is a function.
+    """
+    global index
+    E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
+    E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
+    E = np.append(E_min, E_max)
+
+    zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
+    # Create initial state psi with magnetization of 0. Here we first form
+    #  a binary number which has an equal number of 1's and
+    #  0's.
+    index = np.zeros(N)
+    for k in range(int(round(0.5 * N))):
+        index[k] = 1
+
+    error = False
+    counter = 0
+    num_good = 0
+    psilist = []
+    eigenvalues = []
+
+    while True:
+        index = qm.permute_one_zero(index)
+        psi_0 = basis(N, counter)
+        # Make sure psi's energy density is very close to 0.5.
+        e, ev = energy_density(psi_0, H, E)
+        if abs(e - 0.5) < .001:
+            psi_0 = recast(N, psi_0)
+            psilist.append(psi_0)
+            eigenvalues.append(ev)
+            num_good +=1
+
+        counter += 1
+
+        # Break if enough states are found.
+        if num_good >= num_psis:
+            break
+
+        # Display an error message when no suitable state is found.
+        if counter >= zero_Sz_basis_count:
+            error = True
+            break
+    return H, psilist, eigenvalues, error
