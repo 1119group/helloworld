@@ -8,20 +8,32 @@ class Timer():
     The timer object times the operations and prints out a nice progress bar.
     At the end of the operation, the timer will print out the total time
     taken so far.
+
+    Usage: Initialize the class by calling timer = Timer(total_number_of_jobs),
+           then at the end of each job (such as in a for loop after every
+           task) invoke timer.progress() and the progress bar and the time
+           estimation will be updated.
+
+           At the end of the program, that is after all specified jobs
+           are finished, the total elapsed time will be automatically shown
+           unless the show_elapsed option is set to False.
     """
 
-    def __init__(self, total, barlength=25):
+    def __init__(self, total, barlength=25, show_elapsed=True):
         """
         Initializes the timer object
         "total" is the total number of jobs that would take roughly
         the same amount of time to finish.
         "barlength" is the length of the bar that will be shown on screen.
         The default is 25.
+        "show_elapsed" controls whether the final elapsed time is shown
+        after the program finishes. The default is "True."
         """
         self.start_time = time.time()
         self.iteration = 0
         self.total = total
         self.barlength = barlength
+        self.show_elapsed = show_elapsed
         self.show_progress()
 
     def update_progress(self):
@@ -32,8 +44,8 @@ class Timer():
 
     def show_progress(self):
         """
-        Shows the progress bar on screen. When being the called the
-        after the first time, it updates the progress bar.
+        Shows the progress bar on screen. When being called after the
+        first time, it updates the progress bar.
         """
         if self.iteration == 0:
             report_time = ""
@@ -66,17 +78,10 @@ class Timer():
         print("\nTime elapsed: " + elapsed_time)
 
     def progress(self):
-        """
-        Prints the progress on screen. "start_time" is the the start time
-        of the entire program. "iteration" is the job number of the
-        current job. As with everything in Python, it is 0 based. For
-        instance, if the current job is the first task, iteration=0.
-        "total" is the total number of tasks to perform.
-        The output is in the hh:mm:ss format.
-        """
+        """Prints the progress on screen"""
         # Update the progress.
         if self.iteration < self.total:
             self.update_progress()
             self.show_progress()
-        if self.iteration == self.total:
+        if self.iteration == self.total and self.show_elapsed:
             self.show_elapsed_time()
