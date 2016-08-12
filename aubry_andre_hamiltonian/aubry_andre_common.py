@@ -262,7 +262,7 @@ def gen_psis_and_eigvs(N, H, basis, num_psis):
             psi_0 = recast(N, psi_0)
             psilist.append(psi_0)
             eigenvalues.append(ev)
-            num_good +=1
+            num_good += 1
 
         counter += 1
 
