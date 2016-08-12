@@ -7,26 +7,6 @@ from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
 
 
-def spin2z_old(D, N, psi):
-    """
-    Rewrites a given state psi from the spin basis (the basis of
-    the block diagonalized Hamiltonian) to the conventional
-    Sz product basis.
-    Only works for zero total <Sz>.
-    Slow.
-    """
-    psi_tz = lil_matrix((D, 1), dtype=complex)
-    j_max = int(round(0.5 * N))
-    blk_sz = int(round(comb(N, j_max)))
-    blk_pos = int(round(0.5 * (D - blk_sz)))
-    basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max, 0)
-    for i in basis_dict_0:
-        psi_tz[i, 0] = psi[basis_dict_0[i] + blk_pos, 0]
-
-    psi_tz = psi_tz.tocsc()
-    return psi_tz
-
-
 def spin2z(D, N, psi):
     """
     Rewrite a given state psi from the spin basis (the basis of
@@ -34,6 +14,12 @@ def spin2z(D, N, psi):
     Sz product basis.
     Much faster than the other verions.
     """
+    # TODO: Test the function with both a column vector and a row vector.
+    vdim = psi.get_shape()[0]
+    # Convert the vector into a column if it is not one already.
+    if vdim == 1:
+        psi = psi.transpose().conjugate()
+
     psi_tz = lil_matrix((D, 1), dtype=complex)
     j_max = int(round(0.5 * N))
     blk_sz = int(round(comb(N, j_max)))
@@ -44,28 +30,63 @@ def spin2z(D, N, psi):
             l = basis_set_0[i - shift]
             dec = aubryH.bin2dec(l)
             psi_tz[D - 1 - dec, 0] = psi[i, 0]
+
+    # Convert the longer version of the vector back to a row vector if
+    #  if was one to begin with.
+    if vdim == 1:
+        psi_tz = psi_tz.transpose().conjugate()
     return psi_tz
 
 
-def spin2z_0(D, N, psi):
+def spin2z_sqm(N, S):
     """
-    Rewrites a given state psi from the spin basis (the basis of
-    the block diagonalized Hamiltonian) to the conventional
-    Sz product basis.
-    This version takes in a truncated psi in the zero spin basis and
-    reconstruct the full psi vector in the Sz product basis.
-    Only works for zero total <Sz>.
+    Much like the spin2z function, this function transforms an operator
+    written written in the Hamiltonian spin basis into the conventional
+    Sz product state basis.
+    "N" is the the system size.
+    "S" is the operator. It must be a square sparse matrix.
     """
-    global basis_set_0, basis_dict_0
-    psi_tz = lil_matrix((D, 1), dtype=complex)
+    D = 2**N
+    S_tz = lil_matrix((D, D), dtype=complex)
     j_max = int(round(0.5 * N))
-    blk_sz = int(round(comb(N, j_max)))
-    basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max, 0)
-    for i in basis_dict_0:
-        psi_tz[i, 0] = psi[basis_dict_0[i], 0]
+    for current_j in range(j_max, -1 * j_max - 1, -1):
+        blk_sz = int(round(comb(N, j_max + current_j)))
+        basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max,
+                                                     current_j)
+        shift = int(round(0.5 * (D - blk_sz)))
+        for i in range(np.shape(S.nonzero()[0])[0]):
+            i0 = S.nonzero()[0][i]
+            i1 = S.nonzero()[1][i]
+            l0 = basis_set_0[i0 - shift]
+            l1 = basis_set_0[i1 - shift]
+            dec0 = aubryH.bin2dec(l0)
+            dec1 = aubryH.bin2dec(l1)
+            S_tz[D - 1 - dec0, D - 1 - dec1] = S[i0, i1]
+    return S_tz
 
-    psi_tz = psi_tz.tocsc()
-    return psi_tz
+
+def Sz2spin_basis(N, S):
+    """
+    This function takes in a Pauli z spin operator "S" in the z product state
+    basis and rewrites it into the block Hamiltonian spin basis.
+    It **only** works on Pauli z spin operators in the z product state!
+    "N" is the size of the system.
+    """
+    D = 2**N
+    S_ts = lil_matrix((D, D), dtype=complex)
+    j_max = int(round(0.5 * N))
+    S_ts[0, 0] = S[0, 0]
+    S_ts[-1, -1] = S[-1, -1]
+    curr_pos = 1
+    for current_j in range(j_max, -1 * j_max - 1, -1):
+        blk_sz = int(round(comb(N, j_max + current_j)))
+        basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max,
+                                                     current_j)
+        for i in basis_dict_0:
+            S_ts[curr_pos + basis_dict_0[i],
+                 curr_pos + basis_dict_0[i]] = S[i, i]
+        curr_pos += blk_sz
+    return S_ts
 
 
 def generate_H(Sx, Sy, Sz, N, h, c, phi):
@@ -87,12 +108,22 @@ def recast(N, psi_short):
     This by no means changes the basis into a Sz product basis. For that
     function please refer to spin2z.
     """
+    vdim = psi_short.get_shape()[0]
+    # Convert the vector into a column if it is not one already.
+    if vdim == 1:
+        psi_short = psi_short.transpose().conjugate()
+
     D = 2 ** N
     j_max = int(round(0.5 * N))
     blk_sz = int(round(comb(N, j_max)))
     shift = int(round(0.5 * (D - blk_sz)))
     psi_long = lil_matrix((D, 1), dtype=complex)
     psi_long[shift:D - shift, 0] = psi_short[:, :]
+
+    # Convert the longer version of the vector back to a row vector if
+    #  if was one to begin with.
+    if vdim == 1:
+        psi_long = psi_long.transpose().conjugate()
     return psi_long
 
 

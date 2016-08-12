@@ -28,10 +28,15 @@ def bin2dec(l):
 def basis_set(N, blk_sz, j_max, current_j):
     """
     Returns a list of the full set of basis for the current total <Sz>.
+    This function also returns a dictionary that matches the coordinates
+    of a configuration in the product state basis against its index in
+    the current individual spin block.
     "blk_sz" is the length of the block of the Hamiltonian block that we
     are seeking the basis set for.
     "current_j" is the total <Sz> for the current block.
     """
+    # Check and see if there is disk cache for this basis set. If so,
+    #  load from disk.
     bs_fname = 'cache/basisset_' + str(N) + 'spins_' + str(current_j) + 'Sz'
     bidict_fname = 'cache/basisinddict_' + str(N)
     bidict_fname += 'spins_' + str(current_j) + 'Sz'
@@ -42,6 +47,7 @@ def basis_set(N, blk_sz, j_max, current_j):
         basis_ind_dict = pickle.load(data1)
         data0.close()
         data1.close()
+
     else:
         # Find all the binary representations of the current j.
         D = 2**N
@@ -64,6 +70,9 @@ def basis_set(N, blk_sz, j_max, current_j):
             # The permute function cannot permute lists for which there is
             #  only one permutation.
             current_j_basis_set.append(basis_set_seed)
+
+        # Save the basis sets and their respective dictionaries
+        #  for future uses.
         with open(bs_fname, 'wb') as data0:
             pickle.dump(current_j_basis_set, data0, pickle.HIGHEST_PROTOCOL)
         with open(bidict_fname, 'wb') as data1:
