@@ -78,7 +78,7 @@ def Sz2spin_basis(N, S):
     S_ts[0, 0] = S[0, 0]
     S_ts[-1, -1] = S[-1, -1]
     curr_pos = 1
-    for current_j in range(j_max, -1 * j_max - 1, -1):
+    for current_j in range(j_max - 1, -1 * j_max, -1):
         blk_sz = int(round(comb(N, j_max + current_j)))
         basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max,
                                                      current_j)
