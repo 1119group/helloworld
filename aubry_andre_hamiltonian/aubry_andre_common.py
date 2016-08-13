@@ -136,11 +136,9 @@ def recast(N, psi_short):
     # Convert the longer version of the vector back to a row vector if
     #  if was one to begin with.
     if issparse(psi_short):
-        # Convert the vector into a column if it is not one already.
         if vdim == 1:
             psi_long = psi_long.transpose().conjugate()
     else:
-        # Convert the vector into a column if it not one already.
         if vdim == 1:
             psi_long = psi_long.T.conjugate()
 
