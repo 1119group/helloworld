@@ -1,3 +1,13 @@
+"""
+This module provides common function for many calculations in dealing with
+block diagonalized Hamiltonians.
+
+8-12-2016
+"""
+# TODO: Update/complete all the doc-strings to discribe in depth the
+#       arguments and returns.
+# TODO: Add more comments.
+
 import quantum_module as qm
 from aubry_andre_H import aubry_andre_H
 import aubry_andre_block_H as aubryH
@@ -11,8 +21,15 @@ def spin2z(D, N, psi):
     """
     Rewrite a given state psi from the spin basis (the basis of
     the block diagonalized Hamiltonian) to the conventional
-    Sz product basis.
-    Much faster than the other verions.
+    Sz product basis. It takes a sparse vector/state only. Compatible
+    with both column and row vectors.
+
+    Args: "D" is the side length of the full Hamiltonian. It is usually
+          2**N.
+          "N" is the size of the particle system.
+          "psi" is the vector/state we are performing this operation on.
+    Returns: "psi_tz" is the vector/state rewritten in the Hamiltonian
+             spin basis.
     """
     # TODO: Test the function with both a column vector and a row vector.
     vdim = psi.get_shape()[0]
