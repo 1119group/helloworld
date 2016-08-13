@@ -1,6 +1,5 @@
 import quantum_module as qm
-from aubry_andre_common import spin2z, average_adj_gap_ratio, \
-    average_vn_entropy, recast, get_state_blk, gen_psis_and_eigvs, spin_basis_0
+import aubry_andre_common as aubryC
 import numpy as np
 from scipy.sparse.linalg import expm_multiply, expm
 import aubry_andre_block_H as aubryH
@@ -8,6 +7,24 @@ import aubry_andre_block_H as aubryH
 
 def plot_entropy_time_evo_log(spin, N, h, c, phi, time_range_lower_lim,
                               time_range_upper_lim, sample_size):
+    """
+    This function plots the time evolution of von Neuman entropy over a
+    logarithmic time axis.
+
+    Args: "spin" is the spin of the individual particles
+          "N" is the system size
+          "h" is the strength of the pseudo-random field
+          "c" is the angular frequency of the field
+          "phi" is the phase shift
+          "time_range_lower_lim" is the first point in the plot, in time
+          "time_range_upper_lim" is the last point in the plot, in time
+          "sample_size" is the number points to plot
+    Returns: "imbalance_plot" is a list of values to be plotted.
+             "error" is the status of the state choosing function that
+             is called from this function. If "error" is True, then no
+             state of a zero total <Sz> with an energy density could be found
+             for the current configuration.
+    """
     D = int(2 * spin + 1) ** N
     Sx, Sy, Sz = qm.init(spin)
     entropy_plot = np.zeros(sample_size)
@@ -15,31 +32,31 @@ def plot_entropy_time_evo_log(spin, N, h, c, phi, time_range_lower_lim,
                                           time_range_upper_lim, sample_size)
     # The spin 0 block of H
     H = aubryH.blk_full(N, h, c, 0, phi).tocsc()
-    psi, error = get_state_blk(H, N)
+    psi, error = aubryC.get_state_blk(H, N)
 
     if not error:
-        # Plot the first point which does not require time evolution.
-        psi_long = recast(N, psi)           # psi in the full spin basis
-        psi_tz = spin2z(D, N, psi_long)     # psi in the total Sz basis
+        # Plot the first point which requires a different kind of time
+        #  evolution.
+        psi_tevo_short = expm_multiply(-1j * H * time_range_lower_lim, psi)
+        psi_long = aubryC.recast(N, psi_tevo_short)
+        psi_tz = aubryC.spin2z(D, N, psi_long)   # psi in the total Sz basis
         entropy_plot[0] += qm.get_vn_entropy(psi_tz, spin, N, mode='eqsplit')
 
-        # Plot the second point which requires the first time evolution.
-        current_delta_t = init_delta_t
-        psi_tevo_short = expm_multiply(-1j * H * current_delta_t, psi)
-        psi_tevo_long = recast(N, psi_tevo_short)
-        psi_tevo_tz = spin2z(D, N, psi_tevo_long)
-        entropy_plot[1] += qm.get_vn_entropy(psi_tevo_tz,
-                                             spin, N, mode='eqsplit')
-
         # Plot the rest of the points with time evolution.
-        for plot_point in range(2, sample_size):
-            delta_delta_t = qm.get_delta_delta_t(time_range_lower_lim,
-                                                 plot_point, r)
-            current_delta_t += delta_delta_t
+        for plot_point in range(1, sample_size):
+            if plot_point == 1:
+                current_delta_t, r = qm.get_init_delta_t(time_range_lower_lim,
+                                                         time_range_upper_lim,
+                                                         sample_size)
+            elif plot_point > 1:
+                delta_delta_t = qm.get_delta_delta_t(time_range_lower_lim,
+                                                     plot_point, r)
+                current_delta_t += delta_delta_t
+
             psi_tevo_short = expm_multiply(-1j * H * current_delta_t,
                                            psi_tevo_short)
-            psi_tevo_long = recast(N, psi_tevo_short)
-            psi_tevo_tz = spin2z(D, N, psi_tevo_long)
+            psi_tevo_long = aubryC.recast(N, psi_tevo_short)
+            psi_tevo_tz = aubryC.spin2z(D, N, psi_tevo_long)
             entropy_plot[plot_point] += qm.get_vn_entropy(psi_tevo_tz,
                                                           spin, N,
                                                           mode='eqsplit')
@@ -48,6 +65,24 @@ def plot_entropy_time_evo_log(spin, N, h, c, phi, time_range_lower_lim,
 
 def plot_entropy_time_evo_lin(spin, N, h, c, phi, time_range_lower_lim,
                               time_range_upper_lim, sample_size):
+    """
+    This function plots the time evolution of von Neuman entropy over a
+    linear time axis.
+
+    Args: "spin" is the spin of the individual particles
+          "N" is the system size
+          "h" is the strength of the pseudo-random field
+          "c" is the angular frequency of the field
+          "phi" is the phase shift
+          "time_range_lower_lim" is the first point in the plot, in time
+          "time_range_upper_lim" is the last point in the plot, in time
+          "sample_size" is the number points to plot
+    Returns: "imbalance_plot" is a list of values to be plotted.
+             "error" is the status of the state choosing function that
+             is called from this function. If "error" is True, then no
+             state of a zero total <Sz> with an energy density could be found
+             for the current configuration.
+    """
     D = int(2 * spin + 1) ** N
     Sx, Sy, Sz = qm.init(spin)
     entropy_plot = np.zeros(sample_size)
@@ -55,12 +90,14 @@ def plot_entropy_time_evo_lin(spin, N, h, c, phi, time_range_lower_lim,
 
     # The spin 0 block of H
     H = aubryH.blk_full(N, h, c, 0, phi).tocsc()
-    psi, error = get_state_blk(H, N)
+    psi, error = aubryC.get_state_blk(H, N)
 
     if not error:
-        # Plot the first point which does not require time evolution.
-        psi_long = recast(N, psi)            # psi in the full spin basis
-        psi_tz = spin2z(D, N, psi_long)      # psi in the total Sz basis
+        # Plot the first point which requires a special kind of time evolution.
+        psi = expm_multiply(-1j * H * time_range_lower_lim, psi)
+        # psi in the full spin basis
+        psi_long = aubryC.recast(N, psi)
+        psi_tz = aubryC.spin2z(D, N, psi_long)      # psi in the total Sz basis
         entropy_plot[0] += qm.get_vn_entropy(psi_tz, spin, N, mode='eqsplit')
 
         U = expm(-1j * H * delta_t)
@@ -70,8 +107,8 @@ def plot_entropy_time_evo_lin(spin, N, h, c, phi, time_range_lower_lim,
             psi_time_evolved = U * psi_time_evolved
             # Rewrite the time evolved state in the total Sz basis
             #  before passing it onto the entropy function.
-            psi_tevo_long = recast(N, psi_time_evolved)
-            psi_time_evolved_tz = spin2z(D, N, psi_tevo_long)
+            psi_tevo_long = aubryC.recast(N, psi_time_evolved)
+            psi_time_evolved_tz = aubryC.spin2z(D, N, psi_tevo_long)
             entropy_plot[plot_point] = qm.get_vn_entropy(psi_time_evolved_tz,
                                                          spin, N,
                                                          mode='eqsplit')
@@ -87,10 +124,10 @@ def plot_entropy_and_gap_var_h(spin, N, hmin, hmax, c, phi, sample_size,
     error = False
     for i in range(len(h_list)):
         H = aubryH.blk_full(N, h_list[i], c, 0, phi).tocsc()
-        H, psis, eigvs, error = gen_psis_and_eigvs(N, H,
-                                                   num_psis)
-        entropy_plot[i] = average_vn_entropy(psis, spin, N)
+        H, psis, eigvs, error = aubryC.gen_psis_and_eigvs(N, H,
+                                                          num_psis)
+        entropy_plot[i] = aubryC.average_vn_entropy(psis, spin, N)
         print("eigvs")
         print(eigvs)
-        adj_gap_ratio_plot[i] = average_adj_gap_ratio(eigvs)
+        adj_gap_ratio_plot[i] = aubryC.average_adj_gap_ratio(eigvs)
     return entropy_plot, adj_gap_ratio_plot, error
