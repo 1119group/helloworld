@@ -1,6 +1,6 @@
 """
 This function generates a block diagonalized Hamiltonian for a
-fermionic Aubry-Andre Hamiltonian.
+fermionic Aubry-Andre Hamiltonian with a pseudo-random, quasi-periodic field.
 
 8-13-2016
 """
