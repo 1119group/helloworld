@@ -2,7 +2,7 @@ import quantum_module as qm
 from aubry_andre_H import aubry_andre_H
 import aubry_andre_block_H as aubryH
 import numpy as np
-from scipy.sparse import dok_matrix, lil_matrix
+from scipy.sparse import dok_matrix, lil_matrix, issparse
 from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
 
@@ -105,25 +105,45 @@ def recast(N, psi_short):
     This function takes in a state psi which contains only the elements
     corresponding to a zero total <Sz> and augment it into one that
     would contain elements of all other total <Sz>'s.
+    "psi_short" could be sparse or dense and could be a column or row vector.
+    However, it must be a two-dimensional "vector" in a sense that, if it
+    is a numpy array, it must have a shape of (1, k) or (k, 1) instead of
+    (k, ).
     This by no means changes the basis into a Sz product basis. For that
     function please refer to spin2z.
     """
-    vdim = psi_short.get_shape()[0]
-    # Convert the vector into a column if it is not one already.
-    if vdim == 1:
-        psi_short = psi_short.transpose().conjugate()
-
     D = 2 ** N
+
+    # Provides compatability to both sparse and dense vectors.
+    if issparse(psi_short):
+        vdim = psi_short.get_shape()[0]
+        # Convert the vector into a column if it is not one already.
+        if vdim == 1:
+            psi_short = psi_short.transpose().conjugate()
+        psi_long = lil_matrix((D, 1), dtype=complex)
+    else:
+        vdim = np.shape(psi_short)[0]
+        # Convert the vector into a column if it not one already.
+        if vdim == 1:
+            psi_short = psi_short.T.conjugate()
+        psi_long = np.zeros([D, 1], dtype=complex)
+
     j_max = int(round(0.5 * N))
     blk_sz = int(round(comb(N, j_max)))
     shift = int(round(0.5 * (D - blk_sz)))
-    psi_long = lil_matrix((D, 1), dtype=complex)
-    psi_long[shift:D - shift, 0] = psi_short[:, :]
+    psi_long[shift:D - shift, :] = psi_short[:, :]
 
     # Convert the longer version of the vector back to a row vector if
     #  if was one to begin with.
-    if vdim == 1:
-        psi_long = psi_long.transpose().conjugate()
+    if issparse(psi_short):
+        # Convert the vector into a column if it is not one already.
+        if vdim == 1:
+            psi_long = psi_long.transpose().conjugate()
+    else:
+        # Convert the vector into a column if it not one already.
+        if vdim == 1:
+            psi_long = psi_long.T.conjugate()
+
     return psi_long
 
 
