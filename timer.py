@@ -1,3 +1,9 @@
+"""
+Timer class.
+
+8-10-2016
+"""
+
 import time
 import sys
 from quantum_module import sec_to_human_readable_format
