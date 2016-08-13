@@ -87,10 +87,9 @@ def plot_entropy_and_gap_var_h(spin, N, hmin, hmax, c, phi, sample_size,
     error = False
     for i in range(len(h_list)):
         H = aubryH.blk_full(N, h_list[i], c, 0, phi).tocsc()
-        H, psis, eigvs, error = gen_psis_and_eigvs(N, H, spin_basis_0,
+        H, psis, eigvs, error = gen_psis_and_eigvs(N, H,
                                                    num_psis)
         entropy_plot[i] = average_vn_entropy(psis, spin, N)
-        eigvs.sort()
         print("eigvs")
         print(eigvs)
         adj_gap_ratio_plot[i] = average_adj_gap_ratio(eigvs)
