@@ -1,7 +1,7 @@
 """
 This module provides common functions to do quantum mechanical calculations.
 
-8-2-2016
+8-9-2016
 """
 
 import numpy as np
