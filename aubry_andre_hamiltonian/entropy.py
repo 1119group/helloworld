@@ -78,7 +78,7 @@ def plot_entropy_time_evo_lin(spin, N, h, c, phi, time_range_lower_lim,
     return entropy_plot, error
 
 
-def plot_entropy_and_gap_var_h(spin, N, hmin, hmax, c, phi, sample_size,
+def entropy_agr_vs_h(spin, N, hmin, hmax, c, phi, sample_size,
                                num_psis):
     # This is just a rough outline... FIX THIS LATER
     h_list = np.linspace(hmin, hmax, sample_size)
@@ -86,11 +86,40 @@ def plot_entropy_and_gap_var_h(spin, N, hmin, hmax, c, phi, sample_size,
     adj_gap_ratio_plot = np.zeros(sample_size)
     error = False
     for i in range(len(h_list)):
+        print("h", i + 1, ": ", h_list[i])
         H = aubryH.blk_full(N, h_list[i], c, 0, phi).tocsc()
         H, psis, eigvs, error = gen_psis_and_eigvs(N, H,
                                                    num_psis)
         entropy_plot[i] = average_vn_entropy(psis, spin, N)
-        print("eigvs")
-        print(eigvs)
         adj_gap_ratio_plot[i] = average_adj_gap_ratio(eigvs)
-    return entropy_plot, adj_gap_ratio_plot, error
+    return entropy_plot, adj_gap_ratio_plot, h_list, error
+
+
+def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
+                            phisample):
+    """
+    to be fixed later, runs plot_entropy_and_gap_var_h over many phi and avgs
+    :param spin:
+    :param N:
+    :param hmin:
+    :param hmax:
+    :param hsamples:
+    :param c:
+    :param num_psis:
+    :param phisample:
+    :return:
+    """
+    phi_list = np.linspace(0, 2 * np.pi, phisample)
+    avg_phi_entropy = np.zeros(hsamples)
+    avg_phi_agr = np.zeros(hsamples)
+    error = False
+    for i in range(len(phi_list)):
+        print("phi", i + 1, ": ********", phi_list[i], " ********")
+        entropy, agr, h_list, error = entropy_agr_vs_h(spin, N, hmin, hmax, c,
+                                                 phi_list[i], hsamples,
+                                                 num_psis)
+        avg_phi_entropy += entropy
+        avg_phi_agr += agr
+    avg_phi_entropy /= len(phi_list) * N
+    avg_phi_agr /= len(phi_list)
+    return avg_phi_entropy, avg_phi_agr, h_list, error
