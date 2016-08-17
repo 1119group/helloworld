@@ -1,7 +1,9 @@
-'''
+"""
 This function generates a block diagonalized Hamiltonian for a
-fermionic Aubry-Andre Hamiltonian.
-'''
+fermionic Aubry-Andre Hamiltonian with a pseudo-random, quasi-periodic field.
+
+8-13-2016
+"""
 
 import quantum_module as qm
 import numpy as np
@@ -13,11 +15,13 @@ import pickle
 
 
 def bin2dec(l):
-    '''
+    """
     Convert a list of 1's and 0's, a binary representation of a number,
     into a decimal number.
-    "l" must be a list/array of 1's and 0's.
-    '''
+
+    Args: "l" is a list/array of 1's and 0's.
+    Return: An integer in decimal.
+    """
     n = len(l)
     dec = 0
     for i in range(n):
@@ -27,14 +31,27 @@ def bin2dec(l):
 
 def basis_set(N, blk_sz, j_max, current_j):
     """
-    Returns a list of the full set of basis for the current total <Sz>.
-    This function also returns a dictionary that matches the coordinates
-    of a configuration in the product state basis against its index in
-    the current individual spin block.
-    "blk_sz" is the length of the block of the Hamiltonian block that we
-    are seeking the basis set for.
-    "current_j" is the total <Sz> for the current block.
+    This function creates a list of the full set of basis for the
+    current total <Sz>. It also returns a dictionary that matches the
+    coordinates of a configuration in the product state basis against
+    its index in the current individual spin block.
+
+    Args: "N" is the size of the particle system
+          "blk_sz" is the side length of the block corresponding to this
+          specific total spin
+          "j_max" is the highest total spin
+          "current_j" is the current total spin
+    Return: 1. A full set of spin configurations in a list of lists of 1's and
+               0's. 1 represents spin up and 0 represents spin down.
+            2. A dictionary that maps the locations of spin configurations in
+               the product state ordering with the **local** position of
+               the configurations. (Local means within the current spin block)
     """
+    # TODO: Move to aubry_andre_common because it is not specific to this
+    #       Hamiltonian.
+    # TODO: Remove blk_sz and j_max as arguments since they could be
+    #       easily calculated from N and current_j.
+
     # Check and see if there is disk cache for this basis set. If so,
     #  load from disk.
     bs_fname = 'cache/basisset_' + str(N) + 'spins_' + str(current_j) + 'Sz'
@@ -83,13 +100,22 @@ def basis_set(N, blk_sz, j_max, current_j):
 def iowrapper(func, fname, options):
     """
     Wrapper for I/O operations to enable loading and dumping cache to disk.
-    The data in question must be a scipy sparse matrix for this function
+    The data in question must be a scipy sparse matrix for this wrapper
     to work properly.
-    "func" is the function to be wrapped.
-    "fname" is the name of the file to be saved/loaded.
-    "options" is a list of parameters to be passed on to the function.
+
+    Args: "func" is a function to be wrapped such that it could have the
+          added ability to dump cache to disk.
+          "fname" is the name of the cache file to be dumped/loaded to/from
+          disk.
+          "options" is a **list** of arguments (literally arguments enclosed
+          in a Python list) to be passed on to "func." "func" must be written
+          such that it has the ability to unpack arguments from a list.
+    Return: An operator/matrix which "func" is able to independently return,
+            only now it could be loaded from disk instead of being
+            regenerated from scratch every single time.
     """
     # TODO: Move to quantum_module in due time
+
     if os.path.isfile(fname):
         operator = io.loadmat(fname)['i']
     else:
@@ -100,13 +126,19 @@ def iowrapper(func, fname, options):
 
 def blk_off_diag_ut_nocache(options):
     """
-    Privides the upper half of the off_diagonal elements of one
+    Provides the upper half of the off-diagonal elements of one
     block of the Hamiltonian corresponding to the given total Sz.
     Returns an upper triangle sparse matrix.
-    "total_Sz" is the total spin of all the basis states in the current block.
-    "pos" is the i or j coordinates of the upper left element of
-    the current block in the full Hamiltonian.
-    This function does not save the results on disk.
+
+    This function does NOT save the results on disk.
+
+    Args: "options" is a set of arguments enclosed in a Python list. "options"
+          must contain three objects: "N", "total_Sz" and "J." "N" is the
+          size of the particle system. "total_Sz" is the total spin of this
+          particular block of off-diagonal elements for the Hamiltonian. "J"
+          is the coupling constant. If not specified, set it to 1.
+    Return: A sparse matrix (lil_matrix) containing the upper half of the
+            off-diagonal elements of the specified total <Sz>.
     """
     [N, total_Sz, J] = options
     D = 2**N
@@ -140,12 +172,17 @@ def blk_off_diag_ut_nocache(options):
 
 def blk_off_diag_ut(N, total_Sz, J=1):
     """
-    Privides the off_diagonal elements of one block of the Hamiltonian
-    corresponding to the given total Sz. Provides only an upper triangular
-    matrix.
-    "total_Sz" is the total spin of all the basis states in the current block.
-    "pos" is the i or j coordinates of the upper left element of
-    the current block in the full Hamiltonian.
+    Provides the upper half of the off-diagonal elements of one
+    block of the Hamiltonian corresponding to the given total Sz.
+    Returns an upper triangle sparse matrix.
+
+    This function automatically saves/loads cache to/from disk.
+
+    Args: "N" is the size of the entire particle system.
+          "total_Sz" is the total z direction spin of the current block.
+          "J" is the coupling constant. It is defaulted to 1.
+    Return: A sparse matrix (lil_matrix) containing the upper half of the
+            off-diagonal elements of the specified total <Sz>.
     """
     options = [N, total_Sz, J]
     fname = 'cache/H_block_off_diag_ut' + str(N) + 'spins_J' + str(J) + '_'
@@ -156,12 +193,17 @@ def blk_off_diag_ut(N, total_Sz, J=1):
 
 def blk_off_diag(N, total_Sz, J=1):
     """
-    Privides the off_diagonal elements of one block of the Hamiltonian
-    corresponding to the given total Sz. Provides only an upper triangular
-    matrix.
-    "total_Sz" is the total spin of all the basis states in the current block.
-    "pos" is the i or j coordinates of the upper left element of
-    the current block in the full Hamiltonian.
+    Provides the off-diagonal elements of one block of the Hamiltonian
+    corresponding to the given total Sz. Returns a sparse matrix.
+    (A full matrix, not just an upper triangular matrix)
+
+    This function automatically saves/loads cache to/from disk.
+
+    Args: "N" is the size of the entire particle system.
+          "total_Sz" is the total z direction spin of the current block.
+          "J" is the coupling constant. It is defaulted to 1.
+    Return: A sparse matrix (lil_matrix) containing the off-diagonal
+            elements of the specified total <Sz>.
     """
     H_curr_blk_off_diag = blk_off_diag_ut(N, total_Sz, J)
     H_curr_blk_off_diag += H_curr_blk_off_diag.transpose()
@@ -170,9 +212,18 @@ def blk_off_diag(N, total_Sz, J=1):
 
 def blk_diag(N, h, c, total_Sz, phi=0):
     """
-    Provides the diagonal entries of a block of the Hamiltonian
-    corresponding to the given total Sz.
-    "total_Sz" is the total spin of all the basis states in the current block.
+    Provides the diagonal elements of one block of the Hamiltonian
+    corresponding to the given total Sz. Returns a sparse matrix.
+
+    This function does not load/save cache to/from disk.
+
+    Args: "N" is the size of the entire particle system.
+          "h" is the strength of the pseudo-random field.
+          "c" is the angular frequency of the field.
+          "total_Sz" is the total z direction spin of the current block.
+          "phi" is the phase shift of the field. Defaults to 0.
+    Return: A sparse matrix (lil_matrix) containing the diagonal elements
+            of the specified total <Sz>.
     """
     # Side length of the current block.
     j_max = int(round(0.5 * N))
@@ -208,7 +259,24 @@ def blk_diag(N, h, c, total_Sz, phi=0):
 
 
 def blk_full(N, h, c, total_Sz, phi=0, J=1):
-    """Generates block of the Hamiltonian for a specific total <Sz>."""
+    """
+    Provides one full block of the Hamiltonian corresponding to the given
+    total Sz, complete with diagonal and off-diagonal elements.
+    Returns a sparse matrix.
+
+    This function indirectly makes use of the caching function of
+    blk_off_diag.
+
+    Args: "N" is the size of the entire particle system.
+          "h" is the strength of the pseudo-random field.
+          "c" is the angular frequency of the field.
+          "total_Sz" is the total z direction spin of the current block.
+          "phi" is the phase shift of the field. Defaults to 0.
+          "J" is the coupling constant. Defaults to 1.
+    Return: A sparse matrix (lil_matrix) containing all the elements of
+            the entire block of the Hamiltonian corresponding to the
+            specified total <Sz>.
+    """
     H_curr_blk_diag = blk_diag(N, h, c, total_Sz, phi)
     H_curr_blk_off_diag = blk_off_diag(N, total_Sz, J)
     return H_curr_blk_diag + H_curr_blk_off_diag
@@ -216,7 +284,17 @@ def blk_full(N, h, c, total_Sz, phi=0, J=1):
 
 def aubry_andre_H_off_diag_nocache(options):
     """
-    Provides the off-diagonal elements of the Hamiltonian.
+    Provides the off-diagonal elements of the full Hamiltonian.
+    Returns a sparse matrix.
+
+    This function does NOT save the results on disk.
+
+    Args: "options" is a set of arguments enclosed in a Python list. "options"
+          must contain two objects: "N" and "J." "N" is the
+          size of the particle system. "J" is the coupling constant.
+          If not specified, set it to 1.
+    Return: A sparse matrix (lil_matrix) containing all the off-diagonal
+            elements of the full Hamiltonian.
     """
     [N, J] = options
     D = 2**N
@@ -236,6 +314,17 @@ def aubry_andre_H_off_diag_nocache(options):
 
 
 def aubry_andre_H_off_diag(N, J=1):
+    """
+    Provides the off-diagonal elements of the full Hamiltonian.
+    Returns a sparse matrix.
+
+    This function automatically saves/loads the results to/from disk.
+
+    Args: "N" is the size of the partical system.
+          "J" is the coupling constant. Defaults to 1.
+    Return: A sparse matrix (lil_matrix) containing all the off-diagonal
+            elements of the full Hamiltonian.
+    """
     options = [N, J]
     fname = 'cache/aubry_H_off_diag_' + str(N) + 'spins_J' + str(J) + '.mat'
     H_off_diag = iowrapper(aubry_andre_H_off_diag_nocache, fname, options)
@@ -244,8 +333,18 @@ def aubry_andre_H_off_diag(N, J=1):
 
 def aubry_andre_H_diag_nocache(options):
     """
-    Provides the diagonal elements of the Hamiltonian. This version
-    does not save/load cache from disk.
+    Provides the diagonal elements of the full Hamiltonian.
+    Returns a sparse matrix.
+
+    This function does NOT save/load results to/from disk.
+
+    Args: "options" is a set of arguments enclosed in a Python list. "options"
+          must contain four objects: "N", "h", "c" and "phi." "N" is the
+          size of the particle system. "h" is the strength of the pseudo-
+          random field. "c" is the angular frequency of the field. "phi"
+          is the phase shift of the field.
+    Return: A sparse matrix (lil_matrix) containing all the diagonal
+            elements of the full Hamiltonian.
     """
     [N, h, c, phi] = options
     D = 2**N
@@ -264,7 +363,19 @@ def aubry_andre_H_diag_nocache(options):
 
 
 def aubry_andre_H_diag(N, h, c, phi=0):
-    """Provides the diagonal elements of the Hamiltonian."""
+    """
+    Provides the diagonal elements of the full Hamiltonian.
+    Returns a sparse matrix.
+
+    This function automatically saves/loads the results to/from disk.
+
+    Args: "N" is the size of the particle system.
+          "h" is the strength of the pseudo-random field.
+          "c" is the angular frequency of the field.
+          "phi" is the phase shift. Defaults to 0.
+    Return: A sparse matrix (lil_matrix) containing all the diagonal
+            elements of the full Hamiltonian.
+    """
     options = [N, h, c, phi]
     fname = 'cache/aubry_H_diag_' + str(N) + 'spins' + '_h' + str(h)
     fname += '_c' + str(c) + '_phi' + str(phi) + '.mat'
@@ -272,12 +383,22 @@ def aubry_andre_H_diag(N, h, c, phi=0):
     return H_off_diag
 
 
-def aubry_andre_H(N, h, c, phi):
+def aubry_andre_H(N, h, c, phi, J=1):
     """
-    A function to put together the pieces of a Hamiltonian and
-    generate a full Hamiltonian.
+    Provides the full Hamiltonian.
+    Returns a sparse matrix.
+
+    This function indirectly makes use of the caching functions of
+    aubry_andre_H_diag and aubry_andre_H_off_diag.
+
+    Args: "N" is the size of the particle system.
+          "h" is the strength of the pseudo-random field.
+          "c" is the angular frequency of the field.
+          "phi" is the phase shift.
+          "J" is the coupling constant. Defaults to 1.
+    Return: The full Hamiltonian in a sparse matrix format. (lil_matrix)
     """
-    H_off_diag = aubry_andre_H_off_diag(N)
+    H_off_diag = aubry_andre_H_off_diag(N, J)
     H_diag = aubry_andre_H_diag(N, h, c, phi)
     H = H_diag + H_off_diag
     return H
