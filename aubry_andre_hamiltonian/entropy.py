@@ -145,6 +145,7 @@ def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
     :return:
     """
     phi_list = np.linspace(0, 2 * np.pi, phisample)
+    phi_list = phi_list[0:-1]
     avg_phi_entropy = np.zeros(hsamples)
     avg_phi_agr = np.zeros(hsamples)
     error = False

@@ -353,7 +353,7 @@ def gen_psis_and_eigvs(N, H, num_psis):
 
     for i in range(evecs.get_shape()[0]):
         e = simdensity(evals[i], E_min, E_max)
-        if abs(e - 0.5) < .03:
+        if abs(e - 0.5) < .05:
             psi = recast(N, evecs[i])
             psilist.append(psi)
             eigenvalues.append(evals[i])
