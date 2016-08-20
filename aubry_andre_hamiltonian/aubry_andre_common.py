@@ -328,6 +328,37 @@ def simdensity(eval, E_min, E_max):
     e = (eval-E_min) / (E_max - E_min)
     return e
 
+def gen_psis_and_eigvs_SI(N, H, num_psis):
+    """
+    Generate Eigenpairs using Shift Inversion Method
+    :param N:
+    :param H:
+    :param num_psis:
+    :return:
+    """
+    global index
+    E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
+    E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
+    E = np.append(E_min, E_max)
+    target_E = .5 * (E[0] + E[1])
+    sevals, sevecs = eigsh(H, k=int(num_psis/2), sigma=target_E, which='SA', maxiter=1e6)
+    levals, levecs = eigsh(H, k=int(num_psis/2), sigma=target_E, which='LA', maxiter=1e6)
+    sevecs = lil_matrix(sevecs, dtype=complex)
+    print(type(sevecs))
+    levecs = lil_matrix(levecs, dtype=complex)
+    print(type(levecs))
+    eigenvalues = np.append(sevals, levals)
+    psilist = []
+    for i in range(sevecs.get_shape()[0]):
+        psi = recast(N, sevecs[i])
+        psilist.append(psi)
+    for i in range(levecs.get_shape()[0]):
+        psi = recast(N, levecs[i])
+        psilist.append(psi)
+    eigenvalues.sort()
+    return H, psilist, eigenvalues
+
+
 
 def gen_psis_and_eigvs(N, H, num_psis):
     """
@@ -343,6 +374,7 @@ def gen_psis_and_eigvs(N, H, num_psis):
     # E = np.append(E_min, E_max)
     print("min", E_min, "max", E_max)
     evecs = lil_matrix(evecs, dtype=complex)
+    print(np.shape(evecs))
     # evals.sort()
     zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
     error = False
@@ -396,4 +428,5 @@ def gen_psis_and_eigvs(N, H, num_psis):
     #         print("problemo")
     #         break
     eigenvalues.sort()
-    return H, psilist, eigenvalues, error
+    print(np.shape(psilist))
+    return H, psilist, eigenvalues
