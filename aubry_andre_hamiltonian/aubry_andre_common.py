@@ -344,20 +344,17 @@ def gen_psis_and_eigvs_SI(N, H, num_psis):
     sevals, sevecs = eigsh(H, k=int(num_psis/2), sigma=target_E, which='SA', maxiter=1e6)
     levals, levecs = eigsh(H, k=int(num_psis/2), sigma=target_E, which='LA', maxiter=1e6)
     sevecs = lil_matrix(sevecs, dtype=complex)
-    print(type(sevecs))
     levecs = lil_matrix(levecs, dtype=complex)
-    print(type(levecs))
     eigenvalues = np.append(sevals, levals)
-    psilist = []
-    for i in range(sevecs.get_shape()[0]):
-        psi = recast(N, sevecs[i])
-        psilist.append(psi)
-    for i in range(levecs.get_shape()[0]):
-        psi = recast(N, levecs[i])
-        psilist.append(psi)
     eigenvalues.sort()
+    psilist = []
+    for i in range(sevecs.get_shape()[1]):
+        psi = recast(N, sevecs[:, i])
+        psilist.append(psi)
+    for i in range(levecs.get_shape()[1]):
+        psi = recast(N, levecs[:, i])
+        psilist.append(psi)
     return H, psilist, eigenvalues
-
 
 
 def gen_psis_and_eigvs(N, H, num_psis):
