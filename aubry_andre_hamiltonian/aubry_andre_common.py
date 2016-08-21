@@ -324,11 +324,8 @@ def average_vn_entropy(list_of_states, spin, N):
     avg_vn_entropy /= len(list_of_states)
     return avg_vn_entropy
 
-def simdensity(eval, E_min, E_max):
-    e = (eval-E_min) / (E_max - E_min)
-    return e
 
-def gen_psis_and_eigvs_SI(N, H, num_psis):
+def gen_eigenpairs(N, H, num_psis):
     """
     Generate Eigenpairs using Shift Inversion Method
     :param N:
@@ -357,73 +354,72 @@ def gen_psis_and_eigvs_SI(N, H, num_psis):
     return H, psilist, eigenvalues
 
 
-def gen_psis_and_eigvs(N, H, num_psis):
-    """
-    Finds the initial state psi for a given Hamiltonian.
-    "basis" is a function.
-    """
-    global index
-    evals, evecs = np.linalg.eigh(H.toarray())
-    E_max = evals[-1]
-    E_min = evals[0]
-    # E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
-    # E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
-    # E = np.append(E_min, E_max)
-    print("min", E_min, "max", E_max)
-    evecs = lil_matrix(evecs, dtype=complex)
-    print(np.shape(evecs))
-    # evals.sort()
-    zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
-    error = False
-    counter = 0
-    num_good = 0
-    psilist = []
-    eigenvalues = []
-
-    for i in range(evecs.get_shape()[0]):
-        e = simdensity(evals[i], E_min, E_max)
-        if abs(e - 0.5) < .05:
-            psi = recast(N, evecs[i])
-            psilist.append(psi)
-            eigenvalues.append(evals[i])
-            num_good += 1
-        counter += 1
-        if num_good >= num_psis:
-            print("Found Enough: ", num_good)
-            break
-        if counter >= zero_Sz_basis_count:
-            print("Not Enough Found")
-            error = True
-            break
-    # # Loop to find a list of suitable eigenstates
-    # for psi in evecs:
-    #     # Make sure psi's energy density is very close to 0.5.
-    #     e, ev = energy_density(psi, H, E)
-    #     if abs(e - 0.5) < .01:
-    #         psi = recast(N, psi)
-    #         psilist.append(psi)
-    #         num_good += 1
-    #
-    #     counter += 1
-    #     # Break if enough states are found.
-    #     if num_good >= num_psis:
-    #         print("Found Enough: ", num_good)
-    #         break
-    #     # Display an error message when no suitable state is found.
-    #     if counter >= zero_Sz_basis_count:
-    #         print("Not Enough Found")
-    #         error = True
-    #         break
-    #
-    # # Select num_psis amount of eigenvalues near zero energy
-    # for i in range(len(evals)):
-    #     if abs(((evals[i] - E[0]) / (E[1] - E[0])) - .5) < .01:
-    #         for k in range(num_psis):
-    #             eigenvalues.append(evals[i+k])
-    #         break
-    #     if i >= len(evals):
-    #         print("problemo")
-    #         break
-    eigenvalues.sort()
-    print(np.shape(psilist))
-    return H, psilist, eigenvalues
+# def gen_psis_and_eigvs(N, H, num_psis):
+#     """
+#     Superseded by gen_eigenpairs, left here for reference.
+#     """
+#     global index
+#     evals, evecs = np.linalg.eigh(H.toarray())
+#     E_max = evals[-1]
+#     E_min = evals[0]
+#     # E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
+#     # E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
+#     # E = np.append(E_min, E_max)
+#     print("min", E_min, "max", E_max)
+#     evecs = lil_matrix(evecs, dtype=complex)
+#     print(np.shape(evecs))
+#     # evals.sort()
+#     zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
+#     error = False
+#     counter = 0
+#     num_good = 0
+#     psilist = []
+#     eigenvalues = []
+#
+#     for i in range(evecs.get_shape()[0]):
+#         e = simdensity(evals[i], E_min, E_max)
+#         if abs(e - 0.5) < .05:
+#             psi = recast(N, evecs[i])
+#             psilist.append(psi)
+#             eigenvalues.append(evals[i])
+#             num_good += 1
+#         counter += 1
+#         if num_good >= num_psis:
+#             print("Found Enough: ", num_good)
+#             break
+#         if counter >= zero_Sz_basis_count:
+#             print("Not Enough Found")
+#             error = True
+#             break
+#     # # Loop to find a list of suitable eigenstates
+#     # for psi in evecs:
+#     #     # Make sure psi's energy density is very close to 0.5.
+#     #     e, ev = energy_density(psi, H, E)
+#     #     if abs(e - 0.5) < .01:
+#     #         psi = recast(N, psi)
+#     #         psilist.append(psi)
+#     #         num_good += 1
+#     #
+#     #     counter += 1
+#     #     # Break if enough states are found.
+#     #     if num_good >= num_psis:
+#     #         print("Found Enough: ", num_good)
+#     #         break
+#     #     # Display an error message when no suitable state is found.
+#     #     if counter >= zero_Sz_basis_count:
+#     #         print("Not Enough Found")
+#     #         error = True
+#     #         break
+#     #
+#     # # Select num_psis amount of eigenvalues near zero energy
+#     # for i in range(len(evals)):
+#     #     if abs(((evals[i] - E[0]) / (E[1] - E[0])) - .5) < .01:
+#     #         for k in range(num_psis):
+#     #             eigenvalues.append(evals[i+k])
+#     #         break
+#     #     if i >= len(evals):
+#     #         print("problemo")
+#     #         break
+#     eigenvalues.sort()
+#     print(np.shape(psilist))
+#     return H, psilist, eigenvalues
