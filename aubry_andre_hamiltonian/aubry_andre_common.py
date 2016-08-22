@@ -404,6 +404,7 @@ def gen_eigenpairs(N, H, num_psis):
     E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
     E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
     E = np.append(E_min, E_max)
+    print("Emin", E_min, "Emax", E_max)
     target_E = .5 * (E[0] + E[1])
     sevals, sevecs = eigsh(H, k=int(num_psis/2), sigma=target_E,
                            which='SA', maxiter=1e6)
@@ -415,10 +416,10 @@ def gen_eigenpairs(N, H, num_psis):
     eigenvalues.sort()
     psilist = []
     for i in range(sevecs.get_shape()[1]):
-        psi = recast(N, sevecs[:, i])
+        psi = spin2z(2 ** N, N, recast(N, sevecs[:, i]))
         psilist.append(psi)
     for i in range(levecs.get_shape()[1]):
-        psi = recast(N, levecs[:, i])
+        psi = spin2z(2 ** N, N, recast(N, levecs[:, i]))
         psilist.append(psi)
     return H, psilist, eigenvalues
 
