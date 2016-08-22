@@ -2,7 +2,7 @@
 This module provides common function for many calculations in dealing with
 block diagonalized Hamiltonians.
 
-8-13-2016
+8-22-2016
 """
 # TODO: Update/complete all the doc-strings to describe in depth the
 #       arguments and returns.
@@ -19,10 +19,10 @@ from scipy.misc import comb
 
 def spin2z(D, N, psi):
     """
-    Rewrite a given state psi from the spin basis (the basis of
-    the block diagonalized Hamiltonian) to the conventional
-    Sz product basis. It takes a sparse vector/state only. Compatible
-    with both column and row vectors.
+    Rewrite a given state psi corresponding to a zero total <Sz> from
+    the spin basis (the basis of the block diagonalized Hamiltonian)
+    to the conventional Sz product basis. It takes a sparse vector/state
+    only. Compatible with both column and row vectors.
 
     Args: "D" is the side length of the full Hamiltonian. It is usually
           2**N.
@@ -56,13 +56,28 @@ def spin2z(D, N, psi):
     return psi_tz
 
 
+def spin2z_nouveau(dummy):
+    # TODO: Generalize spin2z to work with psi's corresponding to an arbitrary
+    #       total <Sz>
+    return dummy
+
+
+def spin2z_complete(dummy):
+    # TODO: Wrapper function for spin2z_nouveau to work with any vector in
+    #       the block Hamiltonian spin basis and not just those with only
+    #       elements corresponding to a specific total z direction spin.
+    return dummy
+
+
 def spin2z_sqm(N, S):
     """
     Much like the spin2z function, this function transforms an operator
     written in the Hamiltonian spin basis into the conventional Sz product
-    state basis.
-    "N" is the the system size.
-    "S" is the operator. It must be a square sparse matrix.
+    state basis. Only works with operators corresponding to a zero total <Sz>.
+
+    Args: "N" is the the system size.
+          "S" is the operator. It must be a square sparse matrix.
+    Returns: An operator in the new basis. It will be a square sparse matrix.
     """
     D = 2**N
     S_tz = lil_matrix((D, D), dtype=complex)
@@ -89,7 +104,11 @@ def Sz2spin_basis(N, S):
     basis and rewrites it into the block Hamiltonian spin basis.
     It **only** works on Pauli z spin operators in the z product state!
     (I was lying--it actually works with all diagonal matrices.)
-    "N" is the size of the system.
+
+    Args: "N" is the size of the system.
+          "S" is the Pauli z spin operator in the z product state basis.
+    Returns: The operator in the new basis and it will be a square
+             sparse matrix.
     """
     D = 2**N
     S_ts = lil_matrix((D, D), dtype=complex)
@@ -113,12 +132,21 @@ def recast(N, psi_short):
     This function takes in a state psi which contains only the elements
     corresponding to a zero total <Sz> and augment it into one that
     would contain elements of all other total <Sz>'s.
-    "psi_short" could be sparse or dense and could be a column or row vector.
-    However, it must be a two-dimensional "vector" in a sense that, if it
-    is a numpy array, it must have a shape of (1, k) or (k, 1) instead of
-    (k, ).
+
     This by no means changes the basis into a Sz product basis. For that
     function please refer to spin2z.
+
+    Args: "N" is the size of the particle system
+          "psi_short" is a state psi which contains only the elements
+          corresponding to a zero total <Sz> and augment it into one that
+          would contain elements of all other total <Sz>'s.
+          "psi_short" could be sparse or dense and could be a column or
+          row vector. However, it must be a two-dimensional "vector" in a
+          sense that, if it is a numpy array, it must have a shape of
+          (1, k) or (k, 1) instead of (k, ).
+    Returns: A column/row, sparse/dense vector, depending on the type and
+             shape of "psi_short." For example, a dense row psi_short input
+             will give you a dense row vector output.
     """
     D = 2 ** N
 
@@ -153,10 +181,28 @@ def recast(N, psi_short):
     return psi_long
 
 
-def nouveau_recast(N, psi_short, total_Sz=0):
+def recast_nouveau(N, psi_short, total_Sz=0):
     """
-    A new version of recast that works with not only zero total <Sz> vectors
-    but also vectors corresponding to all other total z direction spins.
+    This function takes in a state psi which contains only the elements
+    corresponding to an arbitrary total <Sz> and augment it into one that
+    would contain elements of all other total <Sz>'s.
+
+    This by no means changes the basis into a Sz product basis. For that
+    function please refer to spin2z.
+
+    Args: "N" is the size of the particle system
+          "psi_short" is a state psi which contains only the elements
+          corresponding to a zero total <Sz> and augment it into one that
+          would contain elements of all other total <Sz>'s.
+          "psi_short" could be sparse or dense and could be a column or
+          row vector. However, it must be a two-dimensional "vector" in a
+          sense that, if it is a numpy array, it must have a shape of
+          (1, k) or (k, 1) instead of (k, ).
+          "total_Sz" is the total <Sz> the input vector is corresponding to.
+          It is defaulted to 0.
+    Returns: A column/row, sparse/dense vector, depending on the type and
+             shape of "psi_short." For example, a dense row psi_short input
+             will give you a dense row vector output.
     """
     # TODO: Needs to be tested. After testing, replace recast with this
     #       function. Backwards compatible.
@@ -194,7 +240,18 @@ def nouveau_recast(N, psi_short, total_Sz=0):
     return psi_long
 
 
-def energy_density(psi, H, E):
+def energy_density(psi, H):
+    """
+    This function calculates the energy density (<ψ|H|ψ> - E_0)/(E_max - E_0).
+
+    Args: "psi" is the state which energy density will be calculated.
+          "H" is the Hamiltonian in question.
+    Returns: 1. Energy density. A float.
+             2. Expectation value of |ψ> and H. A float.
+    """
+    E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
+    E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
+    E = np.append(E_min, E_max)
     ev = qm.exp_value(H, psi)
     e = (ev - E[0]) / (E[-1] - E[0])
     return e, ev
@@ -237,11 +294,21 @@ def init_state(N, H, basis):
     """
     Finds the initial state psi for a given Hamiltonian.
     "basis" is a function.
+
+    Args: "N" is the size of the particle system.
+          "H" is the Hamiltonian.
+          "basis" is the function that generates psi_0.
+    Returns: 1. Hamiltonian that was just passed onto the function. Kept to
+                maintain code compatibility with some older functions that
+                depended on this output. A sparse CSC matrix.
+             2. Initial state psi that is selected. A column sparse CSC
+                vector (matrix).
+             3. The exit status of the function. If it returns "False" that
+                means everything went as expected and a useful state is
+                generated. If it returns "True" then no useful state is
+                generated. A boolean.
     """
     global index
-    E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
-    E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
-    E = np.append(E_min, E_max)
 
     zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
     # Create initial state psi with magnetization of 0. Here we first form
@@ -257,7 +324,7 @@ def init_state(N, H, basis):
         index = qm.permute_one_zero(index)
         psi_0 = basis(N, counter)
         # Make sure psi's energy density is very close to 0.5.
-        e, ev = energy_density(psi_0, H, E)
+        e, ev = energy_density(psi_0, H)
         if abs(e - 0.5) < 0.001:
             break
 
@@ -338,8 +405,10 @@ def gen_eigenpairs(N, H, num_psis):
     E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
     E = np.append(E_min, E_max)
     target_E = .5 * (E[0] + E[1])
-    sevals, sevecs = eigsh(H, k=int(num_psis/2), sigma=target_E, which='SA', maxiter=1e6)
-    levals, levecs = eigsh(H, k=int(num_psis/2), sigma=target_E, which='LA', maxiter=1e6)
+    sevals, sevecs = eigsh(H, k=int(num_psis/2), sigma=target_E,
+                           which='SA', maxiter=1e6)
+    levals, levecs = eigsh(H, k=int(num_psis/2), sigma=target_E,
+                           which='LA', maxiter=1e6)
     sevecs = lil_matrix(sevecs, dtype=complex)
     levecs = lil_matrix(levecs, dtype=complex)
     eigenvalues = np.append(sevals, levals)
@@ -362,8 +431,10 @@ def gen_eigenpairs(N, H, num_psis):
 #     evals, evecs = np.linalg.eigh(H.toarray())
 #     E_max = evals[-1]
 #     E_min = evals[0]
-#     # E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
-#     # E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
+#     # E_max = eigsh(H, k=1, which='LA', maxiter=1e6,
+#                     return_eigenvectors=False)
+#     # E_min = eigsh(H, k=1, which='SA', maxiter=1e6,
+#                     return_eigenvectors=False)
 #     # E = np.append(E_min, E_max)
 #     print("min", E_min, "max", E_max)
 #     evecs = lil_matrix(evecs, dtype=complex)
