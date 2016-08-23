@@ -15,7 +15,6 @@ import numpy as np
 from scipy.sparse import dok_matrix, lil_matrix, issparse
 from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
-import time
 
 
 def spin2z(D, N, psi):
@@ -65,8 +64,8 @@ def spin2z_blk(N, psi, total_Sz=0):
     """
     Rewrite a given slice of psi corresponding to a given total <Sz> from
     the spin basis (the basis of the block diagonalized Hamiltonian)
-    to the conventional Sz product basis. It takes a sparse vector/state
-    only. Compatible with both column and row vectors.
+    to the conventional Sz product basis. It takes a sparse/dense vector/state.
+    Compatible with both column and row vectors.
 
     Args: "N" is the size of the particle system.
           "psi" is the vector/state we are performing this operation on.
@@ -76,6 +75,8 @@ def spin2z_blk(N, psi, total_Sz=0):
              spin basis.
     """
     D = 2 ** N
+
+    # Provide compatibility for both sparse and dense, row and column vectors.
     if issparse(psi):
         vdim = psi.get_shape()[0]
         # Convert the vector into a column if it is not one already.
@@ -88,8 +89,9 @@ def spin2z_blk(N, psi, total_Sz=0):
         # Convert the vector into a column if it not one already.
         if vdim == 1:
             psi = psi.T.conjugate()
-        psi = np.zeros([D, 1], dtype=complex)
+        psi_tz = np.zeros([D, 1], dtype=complex)
 
+    # Actual algorithm that does the job.
     psi_tz = lil_matrix((D, 1), dtype=complex)
     j_max = int(round(0.5 * N))
     blk_sz = int(round(comb(N, j_max)))
@@ -111,14 +113,48 @@ def spin2z_blk(N, psi, total_Sz=0):
     return psi_tz
 
 
-def spin2z_complete(dummy):
-    # TODO: Wrapper function for spin2z_nouveau to work with any vector in
-    #       the block Hamiltonian spin basis and not just those with only
-    #       elements corresponding to a specific total z direction spin.
+def spin2z_full(N, psi):
+    # TODO: Needs to be tested!
+    D = 2 ** N
+    # Provide compatibility for both sparse and dense, row and column vectors.
+    if issparse(psi):
+        vdim = psi.get_shape()[0]
+        # Convert the vector into a column if it is not one already.
+        if vdim == 1:
+            psi = psi.transpose().conjugate()
+        psi = psi.tolil()
+        psi_tz = lil_matrix((D, 1), dtype=complex)
+    else:
+        vdim = np.shape(psi)[0]
+        # Convert the vector into a column if it not one already.
+        if vdim == 1:
+            psi = psi.T.conjugate()
+        psi_tz = np.zeros([D, 1], dtype=complex)
+
+    # Actual algorithm that does the job.
+    j_max = int(round(0.5 * N))
+    psi_tz[0, 0] = psi[0, 0]
+    psi_tz[-1, 0] = psi[-1, 0]
+    shift = 1
+    for current_j in range(j_max -1, -1 * j_max, -1):
+        blk_sz = int(round(comb(N, j_max + current_j)))
+        psi_slice = psi[shift:shift + blk_sz, 0]
+        psi_tz += spin2z_blk(N, psi_slice, current_j)
+        shift += blk_sz
+
+    # Convert the longer version of the vector back to a row vector if
+    #  if was one to begin with.
+    if issparse(psi):
+        if vdim == 1:
+            psi_tz = psi_tz.transpose().conjugate()
+    else:
+        if vdim == 1:
+            psi_tz = psi_tz.T.conjugate()
+
     return dummy
 
 
-def spin2z_sqm(N, S):
+def spin2z_sqm_blk(N, S):
     """
     Much like the spin2z function, this function transforms an operator
     written in the Hamiltonian spin basis into the conventional Sz product
@@ -131,7 +167,7 @@ def spin2z_sqm(N, S):
     D = 2**N
     S_tz = lil_matrix((D, D), dtype=complex)
     j_max = int(round(0.5 * N))
-    for current_j in range(j_max, -1 * j_max - 1, -1):
+    for current_j in range(j_max - 1, -1 * j_max, -1):
         blk_sz = int(round(comb(N, j_max + current_j)))
         basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max,
                                                      current_j)
@@ -176,61 +212,7 @@ def Sz2spin_basis(N, S):
     return S_ts
 
 
-def recast(N, psi_short):
-    """
-    This function takes in a state psi which contains only the elements
-    corresponding to a zero total <Sz> and augment it into one that
-    would contain elements of all other total <Sz>'s.
-
-    This by no means changes the basis into a Sz product basis. For that
-    function please refer to spin2z.
-
-    Args: "N" is the size of the particle system
-          "psi_short" is a state psi which contains only the elements
-          corresponding to a zero total <Sz> and augment it into one that
-          would contain elements of all other total <Sz>'s.
-          "psi_short" could be sparse or dense and could be a column or
-          row vector. However, it must be a two-dimensional "vector" in a
-          sense that, if it is a numpy array, it must have a shape of
-          (1, k) or (k, 1) instead of (k, ).
-    Returns: A column/row, sparse/dense vector, depending on the type and
-             shape of "psi_short." For example, a dense row psi_short input
-             will give you a dense row vector output.
-    """
-    D = 2 ** N
-
-    # Provides compatibility to both sparse and dense vectors.
-    if issparse(psi_short):
-        vdim = psi_short.get_shape()[0]
-        # Convert the vector into a column if it is not one already.
-        if vdim == 1:
-            psi_short = psi_short.transpose().conjugate()
-        psi_long = lil_matrix((D, 1), dtype=complex)
-    else:
-        vdim = np.shape(psi_short)[0]
-        # Convert the vector into a column if it not one already.
-        if vdim == 1:
-            psi_short = psi_short.T.conjugate()
-        psi_long = np.zeros([D, 1], dtype=complex)
-
-    j_max = int(round(0.5 * N))
-    blk_sz = int(round(comb(N, j_max)))
-    shift = int(round(0.5 * (D - blk_sz)))
-    psi_long[shift:D - shift, :] = psi_short[:,:]
-
-    # Convert the longer version of the vector back to a row vector if
-    #  if was one to begin with.
-    if issparse(psi_short):
-        if vdim == 1:
-            psi_long = psi_long.transpose().conjugate()
-    else:
-        if vdim == 1:
-            psi_long = psi_long.T.conjugate()
-
-    return psi_long
-
-
-def recast_nouveau(N, psi_short, total_Sz=0):
+def recast(N, psi_short, total_Sz=0):
     """
     This function takes in a state psi which contains only the elements
     corresponding to an arbitrary total <Sz> and augment it into one that
@@ -253,8 +235,7 @@ def recast_nouveau(N, psi_short, total_Sz=0):
              shape of "psi_short." For example, a dense row psi_short input
              will give you a dense row vector output.
     """
-    # TODO: Needs to be tested. After testing, replace recast with this
-    #       function. Backwards compatible.
+    # TODO: Needs to be tested. Backwards compatible.
 
     D = 2 ** N
 
@@ -463,5 +444,3 @@ def gen_eigenpairs(N, H, num_psis):
         psi = spin2z(D, N, lil_matrix(recast(N, evecs[:, i]), dtype=complex))
         psilist.append(psi)
     return H, psilist, evals
-
-
