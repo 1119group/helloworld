@@ -1,7 +1,7 @@
 """
 Timer class.
 
-8-10-2016
+8-23-2016
 """
 
 import time
@@ -25,7 +25,7 @@ class Timer():
            unless the show_elapsed option is set to False.
     """
 
-    def __init__(self, total, barlength=25, show_elapsed=True):
+    def __init__(self, total, barlength=25, show_elapsed=True, title=''):
         """
         Initializes the timer object
         "total" is the total number of jobs that would take roughly
@@ -40,6 +40,11 @@ class Timer():
         self.total = total
         self.barlength = barlength
         self.show_elapsed = show_elapsed
+
+        # Prints the title on screen if a title was given, then show the
+        #  progress bar.
+        if title is not '':
+            print(title.title())
         self.__show_progress()
 
     def __update_progress(self):
