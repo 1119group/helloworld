@@ -15,6 +15,7 @@ import numpy as np
 from scipy.sparse import dok_matrix, lil_matrix, issparse
 from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
+import time
 
 
 def spin2z(D, N, psi):
@@ -404,23 +405,35 @@ def gen_eigenpairs(N, H, num_psis):
     E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
     E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
     E = np.append(E_min, E_max)
-    print("Emin", E_min, "Emax", E_max)
     target_E = .5 * (E[0] + E[1])
-    sevals, sevecs = eigsh(H, k=int(num_psis/2), sigma=target_E,
-                           which='SA', maxiter=1e6)
-    levals, levecs = eigsh(H, k=int(num_psis/2), sigma=target_E,
-                           which='LA', maxiter=1e6)
-    sevecs = lil_matrix(sevecs, dtype=complex)
-    levecs = lil_matrix(levecs, dtype=complex)
-    eigenvalues = np.append(sevals, levals)
-    eigenvalues.sort()
     psilist = []
-    for i in range(sevecs.get_shape()[1]):
-        psi = spin2z(2 ** N, N, recast(N, sevecs[:, i]))
+
+    eigenvalues, evecs = eigsh(H, k=int(num_psis), sigma=target_E)
+    eigenvalues.sort()
+    evecs = lil_matrix(evecs, dtype=complex)
+
+    start = time.clock()
+    for i in range(evecs.get_shape()[1]):
+        psi = recast(N, evecs[:, i])
         psilist.append(psi)
-    for i in range(levecs.get_shape()[1]):
-        psi = spin2z(2 ** N, N, recast(N, levecs[:, i]))
-        psilist.append(psi)
+    end = time.clock()
+    print("Recast", end - start)
+
+    # sevals, sevecs = eigsh(H, k=int(num_psis/2), sigma=target_E,
+    #                        which='SA', maxiter=1e6)
+    # levals, levecs = eigsh(H, k=int(num_psis/2), sigma=target_E,
+    #                        which='LA', maxiter=1e6)
+    # sevecs = lil_matrix(sevecs, dtype=complex)
+    # levecs = lil_matrix(levecs, dtype=complex)
+    # eigenvalues = np.append(sevals, levals)
+    # eigenvalues.sort()
+    # for i in range(sevecs.get_shape()[1]):
+    #     psi = spin2z(2 ** N, N, recast(N, sevecs[:, i]))
+    #     psilist.append(psi)
+    # for i in range(levecs.get_shape()[1]):
+    #     psi = spin2z(2 ** N, N, recast(N, levecs[:, i]))
+    #     psilist.append(psi)
+
     return H, psilist, eigenvalues
 
 
