@@ -60,12 +60,58 @@ def spin2z(D, N, psi):
     return psi_tz
 
 
-def spin2z_blk(N, psi, total_Sz=0):
+def sp_den_col_row_compat(vec_in, func, options):
+    """
+    This wrapper function provides compatibility for functions working with
+    vectors with sparse, dense, column and row vectors as long as the
+    function in question is written to work with both sparse and dense
+    column vectors.
+
+    Args: "vec_in" is the vector to be passed on to the function for
+          processing. It could be sparse, dense, column or row, as long as
+          it is "two dimensional" meaning that it must have a shape of
+          (k, 1) or (1, k) but not (k, ).
+          "func" is the function to be wrapped. It must have the ability to
+          unpack its options from a Python list. See below.
+          "options" is a list of options enclosed in a Python list.
+    Returns: A vector which attributes mirrors that of the vector passed
+             into this function.
+    """
+    # Check sparsity of the vector.
+    if issparse(vec_in):
+        vdim = vec_in.get_shape()[0]
+        # Convert the vector into a column if it is not one already.
+        if vdim == 1:
+            vec_in = vec_in.transpose().conjugate()
+        vec_in = vec_in.tolil()
+        vec_out = lil_matrix((D, 1), dtype=complex)
+    else:
+        vdim = np.shape(vec_in)[0]
+        # Convert the vector into a column if it not one already.
+        if vdim == 1:
+            vec_in = vec_in.T.conjugate()
+        vec_out = np.zeros([D, 1], dtype=complex)
+
+    vec_out = func(vec_in, vec_out, options)
+
+    # Convert the longer version of the vector back to a row vector if
+    #  if was one to begin with.
+    if issparse(vec_in):
+        if vdim == 1:
+            vec_out = vec_out.transpose().conjugate()
+    else:
+        if vdim == 1:
+            vec_out = vec_out.T.conjugate()
+
+    return vec_out
+
+
+def spin2z_blk_nocompat(psi, psi_tz, options):
     """
     Rewrite a given slice of psi corresponding to a given total <Sz> from
     the spin basis (the basis of the block diagonalized Hamiltonian)
-    to the conventional Sz product basis. It takes a sparse/dense vector/state.
-    Compatible with both column and row vectors.
+    to the conventional Sz product basis. This function only works with
+    sparse column vectors.
 
     Args: "N" is the size of the particle system.
           "psi" is the vector/state we are performing this operation on.
@@ -74,25 +120,10 @@ def spin2z_blk(N, psi, total_Sz=0):
     Returns: "psi_tz" is the vector/state rewritten in the Hamiltonian
              spin basis.
     """
+    [N, total_Sz] = options
     D = 2 ** N
 
-    # Provide compatibility for both sparse and dense, row and column vectors.
-    if issparse(psi):
-        vdim = psi.get_shape()[0]
-        # Convert the vector into a column if it is not one already.
-        if vdim == 1:
-            psi = psi.transpose().conjugate()
-        psi = psi.tolil()
-        psi_tz = lil_matrix((D, 1), dtype=complex)
-    else:
-        vdim = np.shape(psi)[0]
-        # Convert the vector into a column if it not one already.
-        if vdim == 1:
-            psi = psi.T.conjugate()
-        psi_tz = np.zeros([D, 1], dtype=complex)
-
     # Actual algorithm that does the job.
-    psi_tz = lil_matrix((D, 1), dtype=complex)
     j_max = int(round(0.5 * N))
     blk_sz = int(round(comb(N, j_max)))
     basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max, total_Sz)
@@ -101,15 +132,27 @@ def spin2z_blk(N, psi, total_Sz=0):
         dec = aubryH.bin2dec(l)
         psi_tz[D - 1 - dec, 0] = psi[i, 0]
 
-    # Convert the longer version of the vector back to a row vector if
-    #  if was one to begin with.
-    if issparse(psi):
-        if vdim == 1:
-            psi_tz = psi_tz.transpose().conjugate()
-    else:
-        if vdim == 1:
-            psi_tz = psi_tz.T.conjugate()
+    return psi_tz
 
+def spin2z_blk(N, psi, total_Sz=0):
+    """
+    Rewrite a given slice of psi corresponding to a given total <Sz> from
+    the spin basis (the basis of the block diagonalized Hamiltonian)
+    to the conventional Sz product basis. Compatible with sparse, dense,
+    row or column vectors.
+
+    Args: "N" is the size of the particle system.
+          "psi" is the vector/state we are performing this operation on.
+          It could be sparse, dense, column or row, as long as
+          it is "two dimensional" meaning that it must have a shape of
+          (k, 1) or (1, k) but not (k, ).
+          "total_Sz" is the total <Sz> the input vector is corresponding to.
+          It is defaulted to 0.
+    Returns: "psi_tz" is the vector/state rewritten in the Hamiltonian
+             spin basis.
+    """
+    options = [N, total_Sz]
+    psi_tz = sp_den_col_row_compat(psi, spin2z_blk_nocompat, options)
     return psi_tz
 
 
@@ -171,7 +214,7 @@ def spin2z_sqm_blk(N, S):
         blk_sz = int(round(comb(N, j_max + current_j)))
         basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max,
                                                      current_j)
-        shift = int(round(0.5 * (D - blk_sz)))
+        shift = int(round(0.5 * (D - blk_sz)))    # FIXME: Something is wrong.
         for i in range(np.shape(S.nonzero()[0])[0]):
             i0 = S.nonzero()[0][i]
             i1 = S.nonzero()[1][i]
