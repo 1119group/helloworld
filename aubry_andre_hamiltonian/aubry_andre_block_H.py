@@ -7,7 +7,6 @@ fermionic Aubry-Andre Hamiltonian with a pseudo-random, quasi-periodic field.
 
 import quantum_module as qm
 import numpy as np
-from scipy import io
 from scipy.sparse import lil_matrix
 from scipy.misc import comb
 import os
@@ -97,33 +96,6 @@ def basis_set(N, blk_sz, j_max, current_j):
     return current_j_basis_set, basis_ind_dict
 
 
-def iowrapper(func, fname, options):
-    """
-    Wrapper for I/O operations to enable loading and dumping cache to disk.
-    The data in question must be a scipy sparse matrix for this wrapper
-    to work properly.
-
-    Args: "func" is a function to be wrapped such that it could have the
-          added ability to dump cache to disk.
-          "fname" is the name of the cache file to be dumped/loaded to/from
-          disk.
-          "options" is a **list** of arguments (literally arguments enclosed
-          in a Python list) to be passed on to "func." "func" must be written
-          such that it has the ability to unpack arguments from a list.
-    Return: An operator/matrix which "func" is able to independently return,
-            only now it could be loaded from disk instead of being
-            regenerated from scratch every single time.
-    """
-    # TODO: Move to quantum_module in due time
-
-    if os.path.isfile(fname):
-        operator = io.loadmat(fname)['i']
-    else:
-        operator = func(options)
-        io.savemat(fname, {'i': operator}, appendmat=False)
-    return operator
-
-
 def blk_off_diag_ut_nocache(options):
     """
     Provides the upper half of the off-diagonal elements of one
@@ -187,7 +159,8 @@ def blk_off_diag_ut(N, total_Sz, J=1):
     options = [N, total_Sz, J]
     fname = 'cache/H_block_off_diag_ut' + str(N) + 'spins_J' + str(J) + '_'
     fname += str(total_Sz) + 'Sz.mat'
-    H_curr_blk_off_diag_ut = iowrapper(blk_off_diag_ut_nocache, fname, options)
+    H_curr_blk_off_diag_ut = qm.iowrapper(blk_off_diag_ut_nocache,
+                                          fname, options)
     return H_curr_blk_off_diag_ut
 
 
@@ -327,7 +300,7 @@ def aubry_andre_H_off_diag(N, J=1):
     """
     options = [N, J]
     fname = 'cache/aubry_H_off_diag_' + str(N) + 'spins_J' + str(J) + '.mat'
-    H_off_diag = iowrapper(aubry_andre_H_off_diag_nocache, fname, options)
+    H_off_diag = qm.iowrapper(aubry_andre_H_off_diag_nocache, fname, options)
     return H_off_diag
 
 
@@ -379,7 +352,7 @@ def aubry_andre_H_diag(N, h, c, phi=0):
     options = [N, h, c, phi]
     fname = 'cache/aubry_H_diag_' + str(N) + 'spins' + '_h' + str(h)
     fname += '_c' + str(c) + '_phi' + str(phi) + '.mat'
-    H_off_diag = iowrapper(aubry_andre_H_diag_nocache, fname, options)
+    H_off_diag = qm.iowrapper(aubry_andre_H_diag_nocache, fname, options)
     return H_off_diag
 
 
