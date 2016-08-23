@@ -15,6 +15,7 @@ import numpy as np
 from scipy.sparse import dok_matrix, lil_matrix, issparse
 from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
+import time
 
 
 def spin2z(D, N, psi):
@@ -215,7 +216,7 @@ def recast(N, psi_short):
     j_max = int(round(0.5 * N))
     blk_sz = int(round(comb(N, j_max)))
     shift = int(round(0.5 * (D - blk_sz)))
-    psi_long[shift:D - shift, :] = psi_short[:, :]
+    psi_long[shift:D - shift, :] = psi_short[:,:]
 
     # Convert the longer version of the vector back to a row vector if
     #  if was one to begin with.
@@ -449,97 +450,18 @@ def gen_eigenpairs(N, H, num_psis):
     :return:
     """
     global index
+    D = 2 ** N
     E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
     E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
     E = np.append(E_min, E_max)
-    print("Emin", E_min, "Emax", E_max)
     target_E = .5 * (E[0] + E[1])
-    sevals, sevecs = eigsh(H, k=int(num_psis/2), sigma=target_E,
-                           which='SA', maxiter=1e6)
-    levals, levecs = eigsh(H, k=int(num_psis/2), sigma=target_E,
-                           which='LA', maxiter=1e6)
-    sevecs = lil_matrix(sevecs, dtype=complex)
-    levecs = lil_matrix(levecs, dtype=complex)
-    eigenvalues = np.append(sevals, levals)
-    eigenvalues.sort()
     psilist = []
-    for i in range(sevecs.get_shape()[1]):
-        psi = spin2z(2 ** N, N, recast(N, sevecs[:, i]))
+    evals, evecs = eigsh(H, k=int(num_psis), sigma=target_E)
+    evals.sort()
+    evecs = np.matrix(evecs, dtype=complex)
+    for i in range(evecs.shape[1]):
+        psi = spin2z(D, N, lil_matrix(recast(N, evecs[:, i]), dtype=complex))
         psilist.append(psi)
-    for i in range(levecs.get_shape()[1]):
-        psi = spin2z(2 ** N, N, recast(N, levecs[:, i]))
-        psilist.append(psi)
-    return H, psilist, eigenvalues
+    return H, psilist, evals
 
 
-# def gen_psis_and_eigvs(N, H, num_psis):
-#     """
-#     Superseded by gen_eigenpairs, left here for reference.
-#     """
-#     global index
-#     evals, evecs = np.linalg.eigh(H.toarray())
-#     E_max = evals[-1]
-#     E_min = evals[0]
-#     # E_max = eigsh(H, k=1, which='LA', maxiter=1e6,
-#                     return_eigenvectors=False)
-#     # E_min = eigsh(H, k=1, which='SA', maxiter=1e6,
-#                     return_eigenvectors=False)
-#     # E = np.append(E_min, E_max)
-#     print("min", E_min, "max", E_max)
-#     evecs = lil_matrix(evecs, dtype=complex)
-#     print(np.shape(evecs))
-#     # evals.sort()
-#     zero_Sz_basis_count = int(round(comb(N, 0.5 * N)))
-#     error = False
-#     counter = 0
-#     num_good = 0
-#     psilist = []
-#     eigenvalues = []
-#
-#     for i in range(evecs.get_shape()[0]):
-#         e = simdensity(evals[i], E_min, E_max)
-#         if abs(e - 0.5) < .05:
-#             psi = recast(N, evecs[i])
-#             psilist.append(psi)
-#             eigenvalues.append(evals[i])
-#             num_good += 1
-#         counter += 1
-#         if num_good >= num_psis:
-#             print("Found Enough: ", num_good)
-#             break
-#         if counter >= zero_Sz_basis_count:
-#             print("Not Enough Found")
-#             error = True
-#             break
-#     # # Loop to find a list of suitable eigenstates
-#     # for psi in evecs:
-#     #     # Make sure psi's energy density is very close to 0.5.
-#     #     e, ev = energy_density(psi, H, E)
-#     #     if abs(e - 0.5) < .01:
-#     #         psi = recast(N, psi)
-#     #         psilist.append(psi)
-#     #         num_good += 1
-#     #
-#     #     counter += 1
-#     #     # Break if enough states are found.
-#     #     if num_good >= num_psis:
-#     #         print("Found Enough: ", num_good)
-#     #         break
-#     #     # Display an error message when no suitable state is found.
-#     #     if counter >= zero_Sz_basis_count:
-#     #         print("Not Enough Found")
-#     #         error = True
-#     #         break
-#     #
-#     # # Select num_psis amount of eigenvalues near zero energy
-#     # for i in range(len(evals)):
-#     #     if abs(((evals[i] - E[0]) / (E[1] - E[0])) - .5) < .01:
-#     #         for k in range(num_psis):
-#     #             eigenvalues.append(evals[i+k])
-#     #         break
-#     #     if i >= len(evals):
-#     #         print("problemo")
-#     #         break
-#     eigenvalues.sort()
-#     print(np.shape(psilist))
-#     return H, psilist, eigenvalues
