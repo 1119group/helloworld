@@ -30,9 +30,13 @@ def spin2z(D, N, psi):
           "psi" is the vector/state we are performing this operation on.
     Returns: "psi_tz" is the vector/state rewritten in the Hamiltonian
              spin basis.
-    """
-    # TODO: Test the function with both a column vector and a row vector.
 
+    Note: This function exists only to provide compatibility with programs
+          that directly calls this function. Displays a warning sign
+          when called.
+    """
+    print("\nThis function is deprecated. Use spin2z_blk instead.")
+    print("For its usage, refer to the documentation of spin2z_blk.")
     vdim = psi.get_shape()[0]
     # Convert the vector into a column if it is not one already.
     if vdim == 1:
@@ -56,10 +60,54 @@ def spin2z(D, N, psi):
     return psi_tz
 
 
-def spin2z_nouveau(dummy):
-    # TODO: Generalize spin2z to work with psi's corresponding to an arbitrary
-    #       total <Sz>
-    return dummy
+def spin2z_blk(N, psi, total_Sz=0):
+    """
+    Rewrite a given slice of psi corresponding to a given total <Sz> from
+    the spin basis (the basis of the block diagonalized Hamiltonian)
+    to the conventional Sz product basis. It takes a sparse vector/state
+    only. Compatible with both column and row vectors.
+
+    Args: "N" is the size of the particle system.
+          "psi" is the vector/state we are performing this operation on.
+          "total_Sz" is the total <Sz> the input vector is corresponding to.
+          It is defaulted to 0.
+    Returns: "psi_tz" is the vector/state rewritten in the Hamiltonian
+             spin basis.
+    """
+    D = 2 ** N
+    if issparse(psi):
+        vdim = psi.get_shape()[0]
+        # Convert the vector into a column if it is not one already.
+        if vdim == 1:
+            psi = psi.transpose().conjugate()
+        psi = psi.tolil()
+        psi_tz = lil_matrix((D, 1), dtype=complex)
+    else:
+        vdim = np.shape(psi)[0]
+        # Convert the vector into a column if it not one already.
+        if vdim == 1:
+            psi = psi.T.conjugate()
+        psi = np.zeros([D, 1], dtype=complex)
+
+    psi_tz = lil_matrix((D, 1), dtype=complex)
+    j_max = int(round(0.5 * N))
+    blk_sz = int(round(comb(N, j_max)))
+    basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max, total_Sz)
+    for i in psi.nonzero()[0]:
+        l = basis_set_0[i]
+        dec = aubryH.bin2dec(l)
+        psi_tz[D - 1 - dec, 0] = psi[i, 0]
+
+    # Convert the longer version of the vector back to a row vector if
+    #  if was one to begin with.
+    if issparse(psi):
+        if vdim == 1:
+            psi_tz = psi_tz.transpose().conjugate()
+    else:
+        if vdim == 1:
+            psi_tz = psi_tz.T.conjugate()
+
+    return psi_tz
 
 
 def spin2z_complete(dummy):
@@ -73,7 +121,7 @@ def spin2z_sqm(N, S):
     """
     Much like the spin2z function, this function transforms an operator
     written in the Hamiltonian spin basis into the conventional Sz product
-    state basis. Only works with operators corresponding to a zero total <Sz>.
+    state basis.
 
     Args: "N" is the the system size.
           "S" is the operator. It must be a square sparse matrix.
