@@ -60,7 +60,7 @@ def spin2z(D, N, psi):
     return psi_tz
 
 
-def sp_den_col_row_compat(vec_in, func, options):
+def sp_den_col_row_compat(N, vec_in, func, options):
     """
     This wrapper function provides compatibility for functions working with
     vectors with sparse, dense, column and row vectors as long as the
@@ -77,6 +77,8 @@ def sp_den_col_row_compat(vec_in, func, options):
     Returns: A vector which attributes mirrors that of the vector passed
              into this function.
     """
+    D = 2 ** N
+
     # Check sparsity of the vector.
     if issparse(vec_in):
         vdim = vec_in.get_shape()[0]
@@ -92,7 +94,7 @@ def sp_den_col_row_compat(vec_in, func, options):
             vec_in = vec_in.T.conjugate()
         vec_out = np.zeros([D, 1], dtype=complex)
 
-    vec_out = func(vec_in, vec_out, options)
+    vec_out = func(N, vec_in, vec_out, options)
 
     # Convert the longer version of the vector back to a row vector if
     #  if was one to begin with.
@@ -106,7 +108,7 @@ def sp_den_col_row_compat(vec_in, func, options):
     return vec_out
 
 
-def spin2z_blk_nocompat(psi, psi_tz, options):
+def spin2z_blk_nocompat(N, psi, psi_tz, options):
     """
     Rewrite a given slice of psi corresponding to a given total <Sz> from
     the spin basis (the basis of the block diagonalized Hamiltonian)
@@ -120,7 +122,7 @@ def spin2z_blk_nocompat(psi, psi_tz, options):
     Returns: "psi_tz" is the vector/state rewritten in the Hamiltonian
              spin basis.
     """
-    [N, total_Sz] = options
+    [total_Sz] = options
     D = 2 ** N
 
     # Actual algorithm that does the job.
@@ -151,8 +153,8 @@ def spin2z_blk(N, psi, total_Sz=0):
     Returns: "psi_tz" is the vector/state rewritten in the Hamiltonian
              spin basis.
     """
-    options = [N, total_Sz]
-    psi_tz = sp_den_col_row_compat(psi, spin2z_blk_nocompat, options)
+    options = [total_Sz]
+    psi_tz = sp_den_col_row_compat(N, psi, spin2z_blk_nocompat, options)
     return psi_tz
 
 
