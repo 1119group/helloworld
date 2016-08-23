@@ -7,9 +7,11 @@ This module provides common functions to do quantum mechanical calculations.
 import numpy as np
 from numpy.random import random_sample, randint
 from numpy.linalg import eigvalsh
-from scipy.sparse import dok_matrix, eye, kron, issparse
+from scipy import io
+from scipy.sparse import dok_matrix, lil_matrix, eye, kron, issparse
 from time import time
 import sys
+import os
 
 
 def init(S):
@@ -33,6 +35,87 @@ def init(S):
         Sz[-int(i - S), -int(i - S)] = i
 
     return Sx, Sy, Sz
+
+
+def iowrapper(func, fname, options):
+    """
+    Wrapper for I/O operations to enable loading and dumping cache to disk.
+    The data in question must be a scipy sparse matrix for this wrapper
+    to work properly.
+
+    Args: "func" is a function to be wrapped such that it could have the
+          added ability to dump cache to disk.
+          "fname" is the name of the cache file to be dumped/loaded to/from
+          disk.
+          "options" is a **list** of arguments (literally arguments enclosed
+          in a Python list) to be passed on to "func." "func" must be written
+          such that it has the ability to unpack arguments from a list.
+    Return: An operator/matrix which "func" is able to independently return,
+            only now it could be loaded from disk instead of being
+            regenerated from scratch every single time.
+    """
+    if os.path.isfile(fname):
+        operator = io.loadmat(fname)['i']
+    else:
+        operator = func(options)
+        io.savemat(fname, {'i': operator}, appendmat=False)
+    return operator
+
+
+def sp_den_col_row_compat(N, vec_in, func, options):
+    """
+    This wrapper function provides compatibility for functions working with
+    vectors with sparse, dense, column and row vectors as long as the
+    function in question is written to work with both sparse and dense
+    column vectors.
+
+    Args: "vec_in" is the vector to be passed on to the function for
+          processing. It could be sparse, dense, column or row, as long as
+          it is "two dimensional" meaning that it must have a shape of
+          (k, 1) or (1, k) but not (k, ).
+          "func" is the function to be wrapped. It must have the ability to
+          unpack its options from a Python list. All in all, it must take
+          in the following arguments:
+              1. "N", the size of the particle system
+              2. "vec_in", the column vector to be processed
+              3. "vec_out", a zero vector with dimensions corresponding to
+                 a full vector of a size N spin 1/2 particle system that
+                 "func" will return eventually
+              4. "options", a Python list containing all other options.
+          "options" is a list of options enclosed in a Python list.
+    Returns: A vector which attributes mirrors that of the vector passed
+             into this function.
+    """
+    D = 2 ** N
+
+    # Check sparsity of the vector.
+    if issparse(vec_in):
+        vdim = vec_in.get_shape()[0]
+        # Convert the vector into a column if it is not one already.
+        if vdim == 1:
+            vec_in = vec_in.transpose().conjugate()
+        vec_in = vec_in.tolil()
+        vec_out = lil_matrix((D, 1), dtype=complex)
+    else:
+        vdim = np.shape(vec_in)[0]
+        # Convert the vector into a column if it not one already.
+        if vdim == 1:
+            vec_in = vec_in.T.conjugate()
+        vec_out = np.zeros([D, 1], dtype=complex)
+
+    # Call the actual function.
+    vec_out = func(N, vec_in, vec_out, options)
+
+    # Convert the longer version of the vector back to a row vector if
+    #  if was one to begin with.
+    if issparse(vec_in):
+        if vdim == 1:
+            vec_out = vec_out.transpose().conjugate()
+    else:
+        if vdim == 1:
+            vec_out = vec_out.T.conjugate()
+
+    return vec_out
 
 
 def get_full_matrix(S, k, N):
@@ -105,7 +188,7 @@ def red_rho_A_1spin(psi, spin):
     """
     Forms a reduced ground state density matrix from a given state "psi."
     Every particle aside from the first will be traced out.
-    "psi" must be a column vector. Sparsity is optional. "spin" the the spin
+    "psi" must be a column vector. Sparsity is optional. "spin" is the spin
     number.
     Returns a sparse matrix.
     """
