@@ -3,7 +3,7 @@ import aubry_andre_common as aubryC
 import numpy as np
 from scipy.sparse.linalg import expm_multiply, expm
 import aubry_andre_block_H as aubryH
-
+import time
 
 def plot_entropy_time_evo_log(spin, N, h, c, phi, time_range_lower_lim,
                               time_range_upper_lim, sample_size):
@@ -122,7 +122,6 @@ def entropy_agr_vs_h(spin, N, hmin, hmax, c, phi, sample_size, num_psis):
     adj_gap_ratio_plot = np.zeros(sample_size)
     error = False
     for i in range(len(h_list)):
-        print("h", i + 1, ": ", h_list[i])
         H = aubryH.blk_full(N, h_list[i], c, 0, phi).tocsc()
         H, psis, eigvs= aubryC.gen_eigenpairs(N, H, num_psis)
         entropy_plot[i] = aubryC.average_vn_entropy(psis, spin, N)
@@ -150,12 +149,16 @@ def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
     avg_phi_agr = np.zeros(hsamples)
     error = False
     for i in range(len(phi_list)):
-        print("phi", i + 1, ": ********", phi_list[i], " ********")
+        start = time.clock()
+        print("phi", i + 1, "N", N)
         entropy, agr, h_list, error = entropy_agr_vs_h(spin, N, hmin, hmax, c,
                                                        phi_list[i], hsamples,
                                                        num_psis)
         avg_phi_entropy += entropy
         avg_phi_agr += agr
+        end = time.clock()
+        elap = end - start
+        print("Iteration Time:", elap, "exp total:", elap * len(phi_list))
     avg_phi_entropy /= len(phi_list) * N
     avg_phi_agr /= len(phi_list)
     return avg_phi_entropy, avg_phi_agr, h_list, error
