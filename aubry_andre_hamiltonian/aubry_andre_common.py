@@ -35,8 +35,8 @@ def spin2z(D, N, psi):
           that directly calls this function. Displays a warning sign
           when called.
     """
-    print("\nThis function is deprecated. Use spin2z_blk instead.")
-    print("For its usage, refer to the documentation of spin2z_blk.")
+    # print("\nThis function is deprecated. Use spin2z_blk instead.")
+    # print("For its usage, refer to the documentation of spin2z_blk.")
     vdim = psi.get_shape()[0]
     # Convert the vector into a column if it is not one already.
     if vdim == 1:
@@ -444,9 +444,19 @@ def gen_eigenpairs(N, H, num_psis):
     psilist = []
     evals, evecs = eigsh(H, k=int(num_psis), sigma=target_E)
     evals.sort()
-    evecs = np.matrix(evecs, dtype=complex)
-    for i in range(evecs.shape[1]):
-        psi = spin2z_blk(N, evecs[i])
-        psi = lil_matrix(psi, dtype=complex)
+
+    # evecs = lil_matrix(evecs, dtype=complex)
+    # for i in range(evecs.get_shape()[1]):
+    #     psi = spin2z_blk(N, evecs[i])
+    #     psilist.append(psi)
+
+    evecs = lil_matrix(evecs, dtype=complex)
+    for i in range(evecs.get_shape()[1]):
+        psi = spin2z(D, N, recast(N, evecs[:, i]))
         psilist.append(psi)
+
+    # evecs = np.matrix(evecs, dtype=complex)
+    # for i in range(evecs.shape[1]):
+    #     psi = lil_matrix(spin2z_blk(N, evecs[i]), dtype=complex)
+    #     psilist.append(psi)
     return H, psilist, evals
