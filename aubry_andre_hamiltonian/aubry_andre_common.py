@@ -60,72 +60,21 @@ def spin2z(D, N, psi):
     return psi_tz
 
 
-def sp_den_col_row_compat(N, vec_in, func, options):
-    """
-    This wrapper function provides compatibility for functions working with
-    vectors with sparse, dense, column and row vectors as long as the
-    function in question is written to work with both sparse and dense
-    column vectors.
-
-    Args: "vec_in" is the vector to be passed on to the function for
-          processing. It could be sparse, dense, column or row, as long as
-          it is "two dimensional" meaning that it must have a shape of
-          (k, 1) or (1, k) but not (k, ).
-          "func" is the function to be wrapped. It must have the ability to
-          unpack its options from a Python list. See below.
-          "options" is a list of options enclosed in a Python list.
-    Returns: A vector which attributes mirrors that of the vector passed
-             into this function.
-    """
-    D = 2 ** N
-
-    # Check sparsity of the vector.
-    if issparse(vec_in):
-        vdim = vec_in.get_shape()[0]
-        # Convert the vector into a column if it is not one already.
-        if vdim == 1:
-            vec_in = vec_in.transpose().conjugate()
-        vec_in = vec_in.tolil()
-        vec_out = lil_matrix((D, 1), dtype=complex)
-    else:
-        vdim = np.shape(vec_in)[0]
-        # Convert the vector into a column if it not one already.
-        if vdim == 1:
-            vec_in = vec_in.T.conjugate()
-        vec_out = np.zeros([D, 1], dtype=complex)
-
-    vec_out = func(N, vec_in, vec_out, options)
-
-    # Convert the longer version of the vector back to a row vector if
-    #  if was one to begin with.
-    if issparse(vec_in):
-        if vdim == 1:
-            vec_out = vec_out.transpose().conjugate()
-    else:
-        if vdim == 1:
-            vec_out = vec_out.T.conjugate()
-
-    return vec_out
-
-
 def spin2z_blk_nocompat(N, psi, psi_tz, options):
     """
     Rewrite a given slice of psi corresponding to a given total <Sz> from
     the spin basis (the basis of the block diagonalized Hamiltonian)
-    to the conventional Sz product basis. This function only works with
-    sparse column vectors.
+    to the conventional Sz product basis.
 
     Args: "N" is the size of the particle system.
           "psi" is the vector/state we are performing this operation on.
-          "total_Sz" is the total <Sz> the input vector is corresponding to.
-          It is defaulted to 0.
+          "psi_tz" is a zero vector.
     Returns: "psi_tz" is the vector/state rewritten in the Hamiltonian
              spin basis.
     """
     [total_Sz] = options
     D = 2 ** N
 
-    # Actual algorithm that does the job.
     j_max = int(round(0.5 * N))
     blk_sz = int(round(comb(N, j_max)))
     basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max, total_Sz)
@@ -154,7 +103,7 @@ def spin2z_blk(N, psi, total_Sz=0):
              spin basis.
     """
     options = [total_Sz]
-    psi_tz = sp_den_col_row_compat(N, psi, spin2z_blk_nocompat, options)
+    psi_tz = qm.sp_den_col_row_compat(N, psi, spin2z_blk_nocompat, options)
     return psi_tz
 
 
@@ -257,6 +206,45 @@ def Sz2spin_basis(N, S):
     return S_ts
 
 
+def recast_nocompat(N, psi_short, psi_long, options):
+    """
+    This function takes in a state psi which contains only the elements
+    corresponding to an arbitrary total <Sz> and augment it into one that
+    would contain elements of all other total <Sz>'s.
+
+    This by no means changes the basis into a Sz product basis. For that
+    function please refer to spin2z.
+
+    Args: "N" is the size of the particle system
+          "psi_short" is a state psi which contains only the elements
+          corresponding to a zero total <Sz> and augment it into one that
+          would contain elements of all other total <Sz>'s. "psi_short"
+          could be sparse or dense and could be a column or row vector.
+          However, it must be a two-dimensional "vector" in a sense that,
+          if it is a numpy array, it must have a shape of (1, k) or (k, 1)
+          instead of (k, ).
+          "psi_long" is a zero vector. It should have the same attributes
+          as psi_short aside from length. "psi_long" should have the full
+          length of a full vector.
+          "options" is the Python list that should only contain "total_Sz",
+          an integer.
+    Returns: A column/row, sparse/dense vector, depending on the type and
+             shape of "psi_short." For example, a dense row psi_short input
+             will give you a dense row vector output.
+    """
+    # TODO: Needs to be tested. Backwards compatible.
+
+    [total_Sz] = options
+    D = 2 ** N
+
+    j_max = int(round(0.5 * N))
+    blk_sz = int(round(comb(N, j_max - total_Sz)))
+    shift = int(round(0.5 * (D - blk_sz)))
+    psi_long[shift:shift + blk_sz, :] = psi_short[:, :]
+
+    return psi_long
+
+
 def recast(N, psi_short, total_Sz=0):
     """
     This function takes in a state psi which contains only the elements
@@ -269,49 +257,19 @@ def recast(N, psi_short, total_Sz=0):
     Args: "N" is the size of the particle system
           "psi_short" is a state psi which contains only the elements
           corresponding to a zero total <Sz> and augment it into one that
-          would contain elements of all other total <Sz>'s.
-          "psi_short" could be sparse or dense and could be a column or
-          row vector. However, it must be a two-dimensional "vector" in a
-          sense that, if it is a numpy array, it must have a shape of
-          (1, k) or (k, 1) instead of (k, ).
+          would contain elements of all other total <Sz>'s. "psi_short"
+          could be sparse or dense and could be a column or row vector.
+          However, it must be a two-dimensional "vector" in a sense that,
+          if it is a numpy array, it must have a shape of (1, k) or (k, 1)
+          instead of (k, ).
           "total_Sz" is the total <Sz> the input vector is corresponding to.
           It is defaulted to 0.
     Returns: A column/row, sparse/dense vector, depending on the type and
              shape of "psi_short." For example, a dense row psi_short input
              will give you a dense row vector output.
     """
-    # TODO: Needs to be tested. Backwards compatible.
-
-    D = 2 ** N
-
-    # Provides compatibility to both sparse and dense vectors.
-    if issparse(psi_short):
-        vdim = psi_short.get_shape()[0]
-        # Convert the vector into a column if it is not one already.
-        if vdim == 1:
-            psi_short = psi_short.transpose().conjugate()
-        psi_long = lil_matrix((D, 1), dtype=complex)
-    else:
-        vdim = np.shape(psi_short)[0]
-        # Convert the vector into a column if it not one already.
-        if vdim == 1:
-            psi_short = psi_short.T.conjugate()
-        psi_long = np.zeros([D, 1], dtype=complex)
-
-    j_max = int(round(0.5 * N))
-    blk_sz = int(round(comb(N, j_max - total_Sz)))
-    shift = int(round(0.5 * (D - blk_sz)))
-    psi_long[shift:shift + blk_sz, :] = psi_short[:, :]
-
-    # Convert the longer version of the vector back to a row vector if
-    #  if was one to begin with.
-    if issparse(psi_short):
-        if vdim == 1:
-            psi_long = psi_long.transpose().conjugate()
-    else:
-        if vdim == 1:
-            psi_long = psi_long.T.conjugate()
-
+    options = [total_Sz]
+    psi_long = qm.sp_den_col_row_compat(N, psi_short, recast_nocompat, options)
     return psi_long
 
 
