@@ -79,11 +79,13 @@ def spin2z_blk_nocompat(N, psi, psi_tz, options):
     blk_sz = int(round(comb(N, j_max)))
     basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max, total_Sz)
     for i in psi.nonzero()[0]:
-        l = basis_set_0[i]
-        dec = aubryH.bin2dec(l)
-        psi_tz[D - 1 - dec, 0] = psi[i, 0]
+        if i < blk_sz:
+            l = basis_set_0[i]
+            dec = aubryH.bin2dec(l)
+            psi_tz[D - 1 - dec, 0] = psi[i, 0]
 
     return psi_tz
+
 
 def spin2z_blk(N, psi, total_Sz=0):
     """
@@ -130,7 +132,7 @@ def spin2z_full(N, psi):
     psi_tz[0, 0] = psi[0, 0]
     psi_tz[-1, 0] = psi[-1, 0]
     shift = 1
-    for current_j in range(j_max -1, -1 * j_max, -1):
+    for current_j in range(j_max - 1, -1 * j_max, -1):
         blk_sz = int(round(comb(N, j_max + current_j)))
         psi_slice = psi[shift:shift + blk_sz, 0]
         psi_tz += spin2z_blk(N, psi_slice, current_j)
