@@ -155,12 +155,12 @@ def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
                                                        phi_list[i], hsamples,
                                                        num_psis)
         avg_phi_entropy += entropy
-        print("cumphient", avg_phi_entropy)
+        # print("cumphient", avg_phi_entropy)
         avg_phi_agr += agr
         end = time.time()
         elap = end - start
         print("Iteration Time:", elap, "exp total:", elap * len(phi_list))
-    print("len phi_list", len(phi_list), "len ph_list*N", len(phi_list) * N)
+    # print("len phi_list", len(phi_list), "len ph_list*N", len(phi_list) * N)
     avg_phi_entropy /= len(phi_list) * N
     avg_phi_agr /= len(phi_list)
     return avg_phi_entropy, avg_phi_agr, h_list

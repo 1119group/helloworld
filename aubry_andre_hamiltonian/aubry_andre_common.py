@@ -15,6 +15,7 @@ import numpy as np
 from scipy.sparse import dok_matrix, lil_matrix, issparse
 from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
+import time
 
 
 def spin2z(D, N, psi):
@@ -436,27 +437,16 @@ def gen_eigenpairs(N, H, num_psis):
     :return:
     """
     global index
-    D = 2 ** N
     E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
     E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
     E = np.append(E_min, E_max)
-    target_E = .5 * (E[0] + E[1])
+    target_E = .5 * (E[0] + E[-1])
     psilist = []
     evals, evecs = eigsh(H, k=int(num_psis), sigma=target_E)
     evals.sort()
 
-    # evecs = lil_matrix(evecs, dtype=complex)
-    # for i in range(evecs.get_shape()[1]):
-    #     psi = spin2z_blk(N, evecs[i])
-    #     psilist.append(psi)
-
-    evecs = lil_matrix(evecs, dtype=complex)
-    for i in range(evecs.get_shape()[1]):
-        psi = spin2z(D, N, recast(N, evecs[:, i]))
+    evecs = np.matrix(evecs, dtype=complex)
+    for i in range(evecs.shape[1]):
+        psi = spin2z_blk(N, evecs[:, i])
         psilist.append(psi)
-
-    # evecs = np.matrix(evecs, dtype=complex)
-    # for i in range(evecs.shape[1]):
-    #     psi = lil_matrix(spin2z_blk(N, evecs[i]), dtype=complex)
-    #     psilist.append(psi)
     return H, psilist, evals
