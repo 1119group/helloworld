@@ -125,8 +125,6 @@ def entropy_agr_vs_h(spin, N, hmin, hmax, c, phi, sample_size, num_psis):
         H, psis, eigvs= aubryC.gen_eigenpairs(N, H, num_psis)
         entropy_plot[i] = aubryC.average_vn_entropy(psis, spin, N)
         adj_gap_ratio_plot[i] = aubryC.average_adj_gap_ratio(eigvs)
-    print("entropyplot", entropy_plot)
-    print("agr", adj_gap_ratio_plot)
     return entropy_plot, adj_gap_ratio_plot, h_list
 
 
