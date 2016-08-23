@@ -106,8 +106,8 @@ def sp_den_col_row_compat(N, vec_in, func, options):
     # Call the actual function.
     vec_out = func(N, vec_in, vec_out, options)
 
-    # Convert the longer version of the vector back to a row vector if
-    #  if was one to begin with.
+    # Convert the processed vector back to a row vector if it was one
+    #  to begin with.
     if issparse(vec_in):
         if vdim == 1:
             vec_out = vec_out.transpose().conjugate()
