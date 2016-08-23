@@ -441,6 +441,7 @@ def gen_eigenpairs(N, H, num_psis):
     evals.sort()
     evecs = np.matrix(evecs, dtype=complex)
     for i in range(evecs.shape[1]):
-        psi = spin2z(D, N, lil_matrix(recast(N, evecs[:, i]), dtype=complex))
+        psi = spin2z_blk(N, evecs[i])
+        psi = lil_matrix(psi, dtype=complex)
         psilist.append(psi)
     return H, psilist, evals
