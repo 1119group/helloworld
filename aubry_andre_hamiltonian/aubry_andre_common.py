@@ -15,7 +15,9 @@ import numpy as np
 from scipy.sparse import dok_matrix, lil_matrix, issparse
 from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
-import time
+from multiprocessing import Pool, Manager
+import os
+from itertools import repeat
 
 
 def spin2z(D, N, psi):
@@ -449,4 +451,5 @@ def gen_eigenpairs(N, H, num_psis):
     for i in range(evecs.shape[1]):
         psi = spin2z_blk(N, evecs[:, i])
         psilist.append(psi)
+
     return H, psilist, evals
