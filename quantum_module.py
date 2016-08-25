@@ -167,20 +167,33 @@ def sort_eigs(E, V):
     Sort the given set of eigenvectors and eigenvectors by the eigenvalues
     from the least to the greatest.
     "E" is a list of eigenvalues.
-    "V" is an eigenvector matrix/array.
+    "V" is an eigenvector matrix/array or a list of eigenvectors.
     """
     temp = []
     E_sorted = np.copy(E)
-    V_sorted = np.copy(V)
-    for j in range(np.shape(E)[0] - 1):
-        for i in range(np.shape(E)[0] - 1):
-            if E_sorted[i] > E_sorted[i + 1]:
-                temp.append(np.copy(V_sorted[:, i]))
-                V_sorted[:, i] = V_sorted[:, i + 1]
-                V_sorted[:, i + 1] = temp.pop()
-                temp.append(E_sorted[i])
-                E_sorted[i] = E_sorted[i + 1]
-                E_sorted[i + 1] = temp.pop()
+    if (type(V) is np.ndarray) or (type(V) is np.matrix):
+        V_sorted = np.copy(V)
+        for j in range(np.shape(E)[0] - 1):
+            for i in range(np.shape(E)[0] - 1):
+                if E_sorted[i] > E_sorted[i + 1]:
+                    temp.append(np.copy(V_sorted[:, i]))
+                    V_sorted[:, i] = V_sorted[:, i + 1]
+                    V_sorted[:, i + 1] = temp.pop()
+                    temp.append(E_sorted[i])
+                    E_sorted[i] = E_sorted[i + 1]
+                    E_sorted[i + 1] = temp.pop()
+
+    elif type(V) is list:
+        V_sorted = V[:]
+        for j in range(np.shape(E)[0] - 1):
+            for i in range(np.shape(E)[0] - 1):
+                if E_sorted[i] > E_sorted[i + 1]:
+                    temp.append(V_sorted[i].copy())
+                    V_sorted[i] = V_sorted[i + 1].copy()
+                    V_sorted[i + 1] = temp.pop().copy()
+                    temp.append(E_sorted[i])
+                    E_sorted[i] = E_sorted[i + 1]
+                    E_sorted[i + 1] = temp.pop()
     return E_sorted, V_sorted
 
 
