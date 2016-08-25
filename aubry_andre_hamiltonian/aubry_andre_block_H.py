@@ -21,10 +21,13 @@ def bin2dec(l):
     Args: "l" is a list/array of 1's and 0's.
     Return: An integer in decimal.
     """
-    n = len(l)
-    dec = 0
-    for i in range(n):
-        dec += l[n - 1 - i] * 2**i
+    # old code
+    # n = len(l)
+    # dec = 0
+    # for i in range(n):
+    #     dec += l[n - 1 - i] * 2**i
+
+    dec = int(''.join(map(str,l)), 2)
     return dec
 
 

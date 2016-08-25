@@ -125,8 +125,6 @@ def entropy_agr_vs_h(spin, N, hmin, hmax, c, phi, sample_size, num_psis):
         H, psis, eigvs= aubryC.gen_eigenpairs(N, H, num_psis)
         entropy_plot[i] = aubryC.average_vn_entropy(psis, spin, N)
         adj_gap_ratio_plot[i] = aubryC.average_adj_gap_ratio(eigvs)
-    print("entropyplot", entropy_plot)
-    print("agr", adj_gap_ratio_plot)
     return entropy_plot, adj_gap_ratio_plot, h_list
 
 
@@ -150,17 +148,14 @@ def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
     avg_phi_agr = np.zeros(hsamples)
     for i in range(len(phi_list)):
         start = time.time()
-        print("phi", i + 1, "N", N)
         entropy, agr, h_list = entropy_agr_vs_h(spin, N, hmin, hmax, c,
                                                        phi_list[i], hsamples,
                                                        num_psis)
         avg_phi_entropy += entropy
-        print("cumphient", avg_phi_entropy)
         avg_phi_agr += agr
         end = time.time()
         elap = end - start
-        print("Iteration Time:", elap, "exp total:", elap * len(phi_list))
-    print("len phi_list", len(phi_list), "len ph_list*N", len(phi_list) * N)
+        print(elap)
     avg_phi_entropy /= len(phi_list) * N
     avg_phi_agr /= len(phi_list)
     return avg_phi_entropy, avg_phi_agr, h_list
