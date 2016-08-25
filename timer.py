@@ -7,6 +7,7 @@ Timer class.
 import time
 import sys
 from quantum_module import sec_to_human_readable_format
+from estimatetime import EstimateTime
 
 
 class Timer():
@@ -25,26 +26,30 @@ class Timer():
            unless the show_elapsed option is set to False.
     """
 
-    def __init__(self, total, barlength=25, show_elapsed=True, title=''):
+    def __init__(self, total, barlength=25, jname='', mode='auto'):
         """
         Initializes the timer object
-        "total" is the total number of jobs that would take roughly
-        the same amount of time to finish.
-        "barlength" is the length of the bar that will be shown on screen.
-        The default is 25.
-        "show_elapsed" controls whether the final elapsed time is shown
-        after the program finishes. The default is "True."
+
+        Args: "total" is the total number of jobs that would take roughly
+              the same amount of time to finish.
+              "barlength" is the length of the bar that will be shown
+              on screen. The default is 25.
+              "show_elapsed" controls whether the final elapsed time is shown
+              after the program finishes. The default is "True."
         """
         self.__start_time = time.time()
         self.iteration = 0
         self.total = total
         self.barlength = barlength
-        self.show_elapsed = show_elapsed
+        self.est_time = 0
 
-        # Prints the title on screen if a title was given, then show the
+        # Initiate EstimateTime class to enable precise time estimation.
+        self.estimatetime = EstimateTime(self.__start_time, self.total, mode)
+
+        # Prints the job name on screen if a name was given, then show the
         #  progress bar.
-        if title is not '':
-            print(title.title())
+        if jname is not '':
+            print(jname.title())
         self.__show_progress()
 
     def __update_progress(self):
@@ -64,17 +69,22 @@ class Timer():
             percent = 0
         else:
             # Calculate time used for progress report purposes.
-            elapsed = time.time() - self.__start_time
-            ET_sec = elapsed / (self.iteration) * (self.total - self.iteration)
-            ET = sec_to_human_readable_format(ET_sec)
+            elapsed = self.elapsed_time()
+            est_time = self.estimatetime.est()
+            if not type(est_time) == int:
+                est_time = self.est_time
+            else:
+                self.est_time = est_time
 
-            report_time = "Est. time: " + ET
-            filledlength = int(round(self.barlength * (self.iteration) /
-                                     self.total))
+            if self.iteration == self.total:
+                est_time = 0
+            ET = sec_to_human_readable_format(est_time)
+
+            report_time = "Est. time: " + ET + "Elapsed: " + elapsed
+            filledlength = int(round(self.barlength * (self.iteration) / self.total))
             percent = round(100.00 * ((self.iteration) / self.total), 1)
 
-        bar = '\u2588' * filledlength + '\u00B7' * (self.barlength
-                                                    - filledlength)
+        bar = '\u2588' * filledlength + '\u00B7' * (self.barlength - filledlength)
         sys.stdout.write('\r%s |%s| %s%s %s' % ('Progress:', bar,
                                                 percent, '%  ', report_time)),
         sys.stdout.flush()
@@ -82,17 +92,16 @@ class Timer():
             sys.stdout.write('\n')
             sys.stdout.flush()
 
-    def show_elapsed_time(self):
+    def elapsed_time(self):
         """Prints the total elapsed time."""
         elapsed = time.time() - self.__start_time
         elapsed_time = sec_to_human_readable_format(elapsed)
-        print("\nTime elapsed: " + elapsed_time)
+        return elapsed_time
 
     def progress(self):
         """Prints the progress on screen"""
         # Update the progress.
         if self.iteration < self.total:
+            self.estimatetime.stop_watch()
             self.__update_progress()
             self.__show_progress()
-        if self.iteration == self.total and self.show_elapsed:
-            self.show_elapsed_time()
