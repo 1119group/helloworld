@@ -41,7 +41,6 @@ class Timer():
         self.iteration = 0
         self.total = total
         self.barlength = barlength
-        self.est_time = 0
 
         # Initiate EstimateTime class to enable precise time estimation.
         self.estimatetime = EstimateTime(self.__start_time, self.total, mode)
@@ -71,10 +70,6 @@ class Timer():
             # Calculate time used for progress report purposes.
             elapsed = self.elapsed_time()
             est_time = self.estimatetime.est()
-            if not type(est_time) == int:
-                est_time = self.est_time
-            else:
-                self.est_time = est_time
 
             if self.iteration == self.total:
                 est_time = 0
