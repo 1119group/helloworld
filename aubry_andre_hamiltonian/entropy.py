@@ -148,6 +148,7 @@ def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
     avg_phi_agr = np.zeros(hsamples)
     for i in range(len(phi_list)):
         start = time.time()
+        print("phi", i + 1, "N", N)
         entropy, agr, h_list = entropy_agr_vs_h(spin, N, hmin, hmax, c,
                                                        phi_list[i], hsamples,
                                                        num_psis)
@@ -155,7 +156,7 @@ def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
         avg_phi_agr += agr
         end = time.time()
         elap = end - start
-        print(elap)
+        print("Iteration Time:", elap, "exp total:", elap * len(phi_list))
     avg_phi_entropy /= len(phi_list) * N
     avg_phi_agr /= len(phi_list)
     return avg_phi_entropy, avg_phi_agr, h_list

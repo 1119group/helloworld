@@ -12,9 +12,7 @@ def get_ground_state(N, h, c, phi):
     V = []
     H_blks = []
     j_max = int(round(0.5 * N))
-
     # Insert the eigenenergy and eigenstate for very first "block" of H
-    E.append(aubh.blk_diag(N, h, c, j_max, phi))
     V_first = ss.lil_matrix((2 ** N, 1))
     V_first[0, 0] = 1
     V.append(V_first.tocsc())
@@ -35,14 +33,14 @@ def get_ground_state(N, h, c, phi):
     V_last = ss.lil_matrix((2 ** N, 1))
     V_last[-1, 0] = 1
     V.append(V_last.tocsc())
-
     E_sorted, V_sorted = qm.sort_eigs(E, V)
-    j_rev = (E.index(E_sorted[0]) + 1) // 2
+    j_rev = (E.index(E_sorted[0]) - 1) // 2
     return H_blks[j_rev], E_sorted[0], V_sorted[0], j_max - j_rev
 
 
 def temporal_correlation(psi_0, U_t, t, S_k, E_0):
-    temp_corr = np.exp(1j * E_0 * t) * psi_0.transpose().conjugate() * S_k * U_t * S_k * psi_0
+    psia = S_k * psi_0
+    temp_corr = np.exp(1j * E_0 * t) * psia.transpose().conjugate() * U_t * psia
     # temp_corr = np.exp(1j * E_0 * t) * psi_0.transpose().conjugate()
     # temp_corr *= U_t
     # temp_corr *= S_k * psi_0
@@ -54,7 +52,6 @@ def plot_linear_time_evolution(N, h, c, phi, k, start_time, end_time, n_points):
     timer = Timer(n_points, jname='temporal correlation:')
     plot = []
     H, E_0, psi_0, total_Sz = get_ground_state(N, h, c, phi)
-
     blk_sz = H.get_shape()[0]
     j_max = int(round(0.5 * N))
     n = j_max + total_Sz
