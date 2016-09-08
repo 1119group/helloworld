@@ -4,6 +4,7 @@ import scipy as sp
 import quantum_module as qm
 import aubry_andre_block_H as aubh
 import aubry_andre_common as aubc
+import matplotlib.pyplot as plt
 from timer import Timer
 
 
@@ -43,22 +44,21 @@ def get_ground_state(N, h, c, phi):
     return H_blks[j_rev], E_min, psi_0, total_Sz
 
 
-def temporal_correlation(psi_0, U_t, t, S_k, E_0):
-    psia = S_k * psi_0
-    temp_corr = np.exp(1j * E_0 * t) * psia.transpose().conjugate() * U_t * psia
+def temporal_correlation(S_k_psi_0, S_k_psi_0_tevo, t, S_k, E_0):
+    temp_corr = np.exp(1j * E_0 * t) * S_k_psi_0.transpose().conjugate() * S_k_psi_0_tevo
     temp_corr = np.real(temp_corr[0, 0])
     return float(temp_corr)
 
 
 def plot_linear_time_evolution(N, h, c, phi, k, start_time, end_time, n_points):
-    timer = Timer(n_points, jname='temporal correlation:')
+    """phi needs to be a list"""
     plot = []
+    j_max = int(round(0.5 * N))
     H, E_0, psi_0, total_Sz = get_ground_state(N, h, c, phi)
     H = H.tocsc()
     psi_0 = psi_0.tocsc()
     blk_sz = H.get_shape()[0]
 
-    j_max = int(round(0.5 * N))
     n = j_max + total_Sz
     shift = 0
     for i in range(N, n, -1):
@@ -69,9 +69,14 @@ def plot_linear_time_evolution(N, h, c, phi, k, start_time, end_time, n_points):
     S_k = aubc.Sz2spin_basis(N, S_k).tolil()
     S_k = S_k[shift:shift + blk_sz, shift:shift + blk_sz].tocsc()
 
-    # Evolve the unitary operator to start_time and plot the first point.
-    U_t = ss.linalg.expm(-1j * H * start_time)
-    temp_corr = temporal_correlation(psi_0, U_t, start_time, S_k, E_0)
+    # Plot the first point
+    if start_time != 0:
+        U_t = ss.linalg.expm(-1j * H * start_time)
+    else:
+        U_t = H.copy()
+    S_k_psi_0 = S_k * psi_0
+    S_k_psi_0_tevo = U_t * S_k_psi_0
+    temp_corr = temporal_correlation(S_k_psi_0, S_k_psi_0_tevo, start_time, S_k, E_0)
     plot.append(temp_corr)
     timer.progress()
 
@@ -79,8 +84,8 @@ def plot_linear_time_evolution(N, h, c, phi, k, start_time, end_time, n_points):
     U_t_const = ss.linalg.expm(-1j * H * dt)
     t = np.linspace(start_time, end_time, n_points)
     for i in range(1, n_points):
-        U_t = U_t_const * U_t
-        temp_corr = temporal_correlation(psi_0, U_t, t[i], S_k, E_0)
+        S_k_psi_0_tevo = U_t_const * S_k_psi_0_tevo
+        temp_corr = temporal_correlation(S_k_psi_0, S_k_psi_0_tevo, t[i], S_k, E_0)
         plot.append(temp_corr)
         timer.progress()
 
@@ -88,3 +93,36 @@ def plot_linear_time_evolution(N, h, c, phi, k, start_time, end_time, n_points):
 
 
 # def plot_log_time_evolution():
+
+N = 10
+c = np.sqrt(2)
+phi = np.linspace(0, 2 * np.pi, 30)
+k = 0
+start_time = 0
+end_time = 25
+n_points = 51
+
+timer = Timer(len(phi) * 3 * n_points, jname='temporal correlation:')
+plot_0 = np.zeros([n_points])
+for i in range(len(phi)):
+    plot, t = plot_linear_time_evolution(N, 1.7, c, phi[i], k,
+                                         start_time, end_time, n_points)
+    plot_0 += plot
+
+plot_1 = np.zeros([n_points])
+for i in range(len(phi)):
+    plot, t = plot_linear_time_evolution(N, 2, c, phi[i], k,
+                                         start_time, end_time, n_points)
+    plot_1 += plot
+
+plot_2 = np.zeros([n_points])
+for i in range(len(phi)):
+    plot, t = plot_linear_time_evolution(N, 2.3, c, phi[i], k,
+                                         start_time, end_time, n_points)
+    plot_2 += plot
+
+# print(t, '\n', plot)
+plt.plot(t, plot_0)
+plt.plot(t, plot_1)
+plt.plot(t, plot_2)
+plt.show()
