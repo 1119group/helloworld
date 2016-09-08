@@ -2,10 +2,13 @@
 This module provides a more fine tuned time estimation method that could
 (attempt to) adapt to varying dt.
 """
-# TODO: Use robust regression for linear and exponential algorithms.
 
 import numpy as np
 import time
+
+
+def reject_outliers(data, m=2):
+    return data[abs(data - np.mean(data)) < m * np.std(data)]
 
 
 class EstimateTime():
@@ -19,6 +22,14 @@ class EstimateTime():
         self.dt_list = []
         self.est_time = 0
 
+        # Length of time estimation for algorithm analysis
+        if self.total <= 200:
+            self.err_len = self.total
+        elif self.total > 200 and self.total <= 800:
+            self.err_len = 200
+        elif self.total > 800:
+            self.err_len = int(round(self.total / 4))
+
         # If a mode is specified, the auto select function will be overridden.
         if mode is not 'auto':
             self.override = True
@@ -30,11 +41,25 @@ class EstimateTime():
         # Containers for the storage of discrepancies between the estimated
         #  time and the actual dt.
         self.lin_err = [0] * 40
+        self.lin_no_err = [0] * 40
         self.average_err = [0] * 40
+        self.average_no_err = [0] * 40
+
+        self.lin_int_err = [0] * 40
+        self.lin_int_no_err = [0] * 40
+        self.average_int_err = [0] * 40
+        self.average_int_no_err = [0] * 40
 
         # Containers for the storage of predicted dt's.
         self.lin_est_next = [0] * 8
+        self.lin_no_est_next = [0] * 8
         self.average_est_next = [0] * 8
+        self.average_no_est_next = [0] * 8
+
+        self.lin_int_est_next = [0] * self.err_len
+        self.lin_int_no_est_next = [0] * self.err_len
+        self.average_int_est_next = [0] * self.err_len
+        self.average_int_no_est_next = [0] * self.err_len
 
     def stop_watch(self):
         self.iteration += 1
@@ -58,8 +83,10 @@ class EstimateTime():
         self.min_key = 'average'
         if self.iteration >= 3:
             # Poll estimated times from different algorithms
-            average_est_time = self.average_est()
-            lin_est_time = self.lin_est()
+            lin_est_time = self.lin_est_no_outlier()
+            lin_no_est_time = self.lin_est_outlier()
+            average_est_time = self.avg_est_no_outlier()
+            average_no_est_time = self.avg_est_outlier()
 
             # Record discrepancies between the estimated delta t's and the
             #  actual delta t.
@@ -69,15 +96,19 @@ class EstimateTime():
             # Review the choice of algorithm after every 15 jobs and switch
             #  to a better one if necessary.
             if not self.override:
-                if self.iteration % 15 == 0 and self.iteration > 8:
+                if self.iteration % 5 == 0 and self.iteration > 8:
                     self.least_err()
 
             # Return the time associated with the algorithm that offers the
             #  highest accuracy.
             if self.min_key is 'average':
                 est_time = average_est_time
+            if self.min_key is 'average_no':
+                est_time = average_no_est_time
             elif self.min_key is 'lin':
                 est_time = lin_est_time
+            elif self.min_key is 'lin_no':
+                est_time = lin_no_est_time
 
             est_time = int(round(est_time))
         else:
@@ -99,11 +130,22 @@ class EstimateTime():
         """
         Records the errors of the estimated time for each algorithm.
         """
-        last_dt_avg = self.dt_list[-8]
+        if len(self.dt_list) < self.err_len:
+            self.err_len = len(self.dt_list)
+
+        last_dt_sum = sum(self.dt_list[int(-1 * self.err_len):])
+        last_dt = self.dt_list[-8]
 
         # Records the discrepancies
-        self.lin_err.append(abs(self.lin_est_next[0] - last_dt_avg))
-        self.average_err.append(abs(self.average_est_next[0] - last_dt_avg))
+        self.lin_int_err.append(abs(self.lin_int_est_next[0] - last_dt_sum))
+        self.lin_int_no_err.append(abs(self.lin_int_no_est_next[0] - last_dt_sum))
+        self.average_int_err.append(abs(self.average_int_est_next[0] - last_dt_sum))
+        self.average_int_no_err.append(abs(self.average_int_no_est_next[0] - last_dt_sum))
+
+        self.lin_err.append(abs(self.lin_est_next[0] - last_dt_sum))
+        self.lin_no_err.append(abs(self.lin_no_est_next[0] - last_dt_sum))
+        self.average_err.append(abs(self.average_est_next[0] - last_dt_sum))
+        self.average_no_err.append(abs(self.average_no_est_next[0] - last_dt_sum))
 
         # Removes the oldest entry
         self.lin_err.pop(0)
@@ -115,23 +157,32 @@ class EstimateTime():
         one with the smallest error.
         """
         errs = {
-            "lin": abs(sum(self.lin_err)),
             "average": abs(sum(self.average_err)),
+            "average_no": abs(sum(self.average_no_err)),
+            "lin": abs(sum(self.lin_err)),
+            "lin_no": abs(sum(self.lin_no_err)),
         }
         self.min_key = min(errs, key=errs.get)
 
-    def average_est(self):
-        def reject_outliers(data, m=2.5):
-            d = np.abs(data - np.median(data))
-            mdev = np.median(d)
-            s = d / mdev if mdev else 0.
-            return data[s < m]
-
+    def avg_est_no_outlier(self):
         dt_list = reject_outliers(np.array(self.dt_list))
         const = np.sum(dt_list) / len(dt_list)
         est_time = const * (self.total - self.iteration)
 
         est_time_next = const
+        self.average_int_no_est_next.append(est_time_next * self.err_len)
+        self.average_int_no_est_next.pop(0)
+        self.average_no_est_next.append(est_time_next)
+        self.average_no_est_next.pop(0)
+        return est_time
+
+    def avg_est_outlier(self):
+        const = np.sum(self.dt_list) / len(self.dt_list)
+        est_time = const * (self.total - self.iteration)
+
+        est_time_next = const
+        self.average_int_est_next.append(est_time_next * self.err_len)
+        self.average_int_est_next.pop(0)
         self.average_est_next.append(est_time_next)
         self.average_est_next.pop(0)
         return est_time
@@ -142,27 +193,13 @@ class EstimateTime():
         v = MTM.I * M.T * y
         return v
 
-    def linv(self):
-        """
-        Calculates the coefficients of model functions for linear
-        least-squares best fit for the y = ax + b model.
-        """
-        def reject_outliers(data, m=2.5):
-            d = np.abs(data - np.median(data))
-            mdev = np.median(d)
-            s = d / mdev if mdev else 0.
-            return data[s < m]
-
-        dt_list = reject_outliers(np.array(self.dt_list))
+    def lin_est(self, dt_list):
         M = np.empty([len(dt_list), 2])
         M[:, 0] = np.ones([len(dt_list)])
         M[:, 1] = np.arange(self.iteration, len(dt_list) + self.iteration)
         y = np.matrix(dt_list).T
         lin_v = self.least_sq_fit(M, y)
-        return lin_v
 
-    def lin_est(self):
-        lin_v = self.linv()
         # Find the time estimate by integrating over the best fit function
         #  from the current point to the last point
         est_time = lin_v[1, 0] * (self.total**2 - self.iteration**2) / 2
@@ -170,8 +207,25 @@ class EstimateTime():
 
         # Find the time estimate for the job 6 points in the future.
         #  For evaluation of the accuracy of the function.
+        int_est_time_next = lin_v[1, 0] * ((self.iteration + self.err_len)**2 - (self.iteration)**2) / 2
+        int_est_time_next += lin_v[0, 0]
         est_time_next = lin_v[1, 0] * ((self.iteration + 8)**2 - (self.iteration + 7)**2) / 2
         est_time_next += lin_v[0, 0]
-        self.lin_est_next.append(est_time_next)
+        return est_time, int_est_time_next, est_time_next
+
+    def lin_est_no_outlier(self):
+        dt_list = reject_outliers(np.array(self.dt_list))
+        est_time, int_est_time_next, est_time_next = self.lin_est(dt_list)
+        self.lin_int_no_est_next.append(est_time_next)
+        self.lin_int_no_est_next.pop(0)
+        self.lin_no_est_next.append(est_time)
+        self.lin_no_est_next.pop(0)
+        return est_time
+
+    def lin_est_outlier(self):
+        est_time, int_est_time_next, est_time_next = self.lin_est(self.dt_list)
+        self.lin_int_est_next.append(est_time_next)
+        self.lin_int_est_next.pop(0)
+        self.lin_est_next.append(est_time)
         self.lin_est_next.pop(0)
         return est_time
