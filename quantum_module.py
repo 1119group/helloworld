@@ -272,7 +272,7 @@ def get_vn_entropy(psi, spin, N=None, mode='1spin', base='e'):
             else:
                 raise Exception('Available bases are "e", "2" and "10"')
 
-    return np.sum(S_AB_terms)
+    return float(np.sum(S_AB_terms))
 
 
 def get_init_delta_t(time_range_lower_lim, time_range_upper_lim, sample_size):
