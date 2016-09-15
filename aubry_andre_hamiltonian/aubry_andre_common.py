@@ -453,3 +453,20 @@ def gen_eigenpairs(N, H, num_psis):
         psilist.append(psi)
 
     return H, psilist, evals
+
+
+def time_evo_exact_diag(E, V, psi, t):
+    """
+    Time evolves a state by time t using exact digitalization.
+
+    Args: "E" is a numpy array of eigenvalues of a Hamiltonian.
+          "V" is the corresponding array of eigenvectors of the Hamiltonian.
+          "psi" is the vector/state to be time evolved. "psi" must be a dense
+          column vector.
+          "t" is the interval for which the state is to be evolved.
+    Returns: A dense column vector as a numpy array
+    """
+    psi_eig = qm.change_basis(psi, V)
+    exp_fac = np.exp(-1j * E * t)
+    psi_t = np.dot(V, exp_fac * psi_eig[:, 0])
+    return np.array(psi_t, ndmin=2).T
