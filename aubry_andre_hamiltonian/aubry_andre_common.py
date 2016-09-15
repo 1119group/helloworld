@@ -455,9 +455,31 @@ def gen_eigenpairs(N, H, num_psis):
     return H, psilist, evals
 
 
+class time_machine():
+    """
+    Time evolves a given state with exact diagonalization using the eigenvalues
+    and eigenvectors provided. Supersedes time_evo_exact_diag.
+    """
+    def __init__(self, E, V, psi):
+        self.eigenvals = np.array(E, ndmin=2).T
+        self.eigenvecs = V
+        self.init_state = psi
+        self.delta_t = 0
+        self.exp_fac = 1
+        self.curr_state_eig = qm.change_basis(self.init_state, self.eigenvecs)
+
+    def evolve(self, dt):
+        if dt != self.delta_t:
+            self.exp_fac = np.exp(-1j * self.eigenvals * dt)
+            self.delta_t = dt
+        self.curr_state_eig *= self.exp_fac
+        return np.dot(self.eigenvecs, self.curr_state_eig)
+
+
 def time_evo_exact_diag(E, V, psi, t):
     """
     Time evolves a state by time t using exact digitalization.
+    DEPRECATED. Keep for comparison with time_machine. 
 
     Args: "E" is a numpy array of eigenvalues of a Hamiltonian.
           "V" is the corresponding array of eigenvectors of the Hamiltonian.
