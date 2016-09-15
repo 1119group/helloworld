@@ -431,6 +431,7 @@ def average_vn_entropy(list_of_states, spin, N):
 
 
 def entropy_variance_list(list_of_states, spin, N):
+    # work in progress
     lenlist = len(list_of_states)
     entropy_list = np.zeros(lenlist)
     variance_list = np.zeros(lenlist)
