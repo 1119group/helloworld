@@ -130,9 +130,9 @@ def get_full_matrix(S, k, N):
     """
     D = S.get_shape()[0]  # Dimensions of the operator/state vector.
 
+    S = dok_matrix(S)
     if k == 0 or k == N:  # k = N is the periodic boundary condition.
-        S_full = dok_matrix(S)
-        S_full = kron(S_full, eye(D ** (N - 1)))
+        S_full = kron(S, eye(D ** (N - 1)))
     elif k == 1:
         S_full = eye(D)
         S_full = kron(S_full, S)
@@ -342,18 +342,36 @@ def change_basis(S, basis):
     matrix with each column vector being a basis vector.
     Returns a sprase column vector.
     """
-    if issparse(basis) is False:  # basis sparsity is optional.
-        basis = dok_matrix(basis)
+    # Old code:
+    # if issparse(basis) is False:  # basis sparsity is optional.
+    #     basis = dok_matrix(basis)
 
-    if np.shape(S)[0] == np.shape(S)[1]:  # For operators
-        U = dok_matrix(basis)
-        S_nb = U.conjtransp().dot(S.dot(U))
-    else:  # For vectors
+    # if np.shape(S)[0] == np.shape(S)[1]:  # For operators
+    #     U = dok_matrix(basis)
+    #     S_nb = U.conjtransp().dot(S.dot(U))
+    # else:  # For vectors
+    #     dim = int(np.shape(basis)[1])
+    #     S_nb = dok_matrix((dim, 1), dtype=complex)
+    #     for i in range(dim):
+    #         S_nb[i, 0] = S.transpose().conjugate().dot(basis[:, i])[0, 0]
+    # Convert the operators to dense for better handling
+    if issparse(basis):
+        basis = basis.todense()
+    else:
+        basis = np.matrix(basis)
+    if issparse(S):
+        S = S.todense()
+    else:
+        S = np.matrix(S)
+
+    if np.shape(S)[0] == np.shape(S)[1]:
+        S_nb = basis.T.conjugate() * S * basis
+    else:
         dim = int(np.shape(basis)[1])
-        S_nb = dok_matrix((dim, 1), dtype=complex)
+        S_nb = np.zeros([dim, 1], complex)
         for i in range(dim):
-            S_nb[i, 0] = S.transpose().conjugate().dot(basis[:, i])[0, 0]
-    return S_nb
+            S_nb[i, 0] += (basis[:, i].T.conjugate() * S)[0, 0]
+    return np.array(S_nb)
 
 
 def next_permutation(l):
