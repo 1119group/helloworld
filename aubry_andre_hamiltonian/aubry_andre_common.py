@@ -473,14 +473,37 @@ def time_evo_exact_diag(E, V, psi, t):
 
 
 def half_chain_Sz(N):
+    """
+    Generates the half chain total z-spin operator.
+
+    Args: "N" is the total system size.
+    Returns: A sparse matrix in the "spin" basis corresponds to the total
+             <Sz> = 0 block.
+    """
     Sx, Sy, Sz = qm.init(0.5)
     Sz_tot = lil_matrix((2**N, 2**N), dtype=complex)
     for k in range(int(round(N // 2))):
         Sz_tot += qm.get_full_matrix(Sz, k, N)
+
+    # Convert to "spin" basis
+    Sz_tot = Sz2spin_basis(N, Sz_tot)
+    ctr_blk_sz = comb(N, int(round(N // 2)))
+    shift = int(round(0.5 * (2**N - ctr_blk_sz)))
+
+    # Slice out the center block
+    Sz_tot = Sz_tot[shift:shift + ctr_blk_sz, shift:shift + ctr_blk_sz]
     return Sz_tot
 
 
 def variance(N, psi):
+    """
+    Computes the half chain total Sz variance/dispersion of a state.
+
+    Args: "N" is the total system size.
+          "psi" is the state in question. "psi" must be a column vector
+          where its sparsity is optional.
+    Returns: A float
+    """
     Sz_tot = half_chain_Sz(N)
     S_sq_exp_val = qm.exp_value(Sz_tot**2, psi)
     S_exp_val = qm.exp_value(Sz_tot, psi)
