@@ -430,6 +430,19 @@ def average_vn_entropy(list_of_states, spin, N):
     return avg_vn_entropy
 
 
+def entropy_variance_list(list_of_states, spin, N):
+    lenlist = len(list_of_states)
+    entropy_list = np.zeros(lenlist)
+    variance_list = np.zeros(lenlist)
+    for i in range(lenlist):
+        entropy_list[i] = qm.get_vn_entropy(list_of_states[i], spin, N,
+                                            mode='eqsplit')
+        variance_list[i] = variance(N, list_of_states[i])
+    avg_vn_entropy = np.mean(entropy_list)
+    avg_variance = np.mean(variance_list)
+    return avg_vn_entropy, entropy_list, avg_variance, variance_list
+
+
 def gen_eigenpairs(N, H, num_psis):
     """
     Generate Eigenpairs using Shift Inversion Method

@@ -198,6 +198,19 @@ def entropy_agr_vs_h(spin, N, hmin, hmax, c, phi, points, num_psis):
     return entropy_plot, adj_gap_ratio_plot, h_list
 
 
+def entropy_var_vs_h(spin, N, hmin, hmax, c, phi, points, num_psis):
+    # replacement function to add variance and keep individual values
+    h_list = np.linspace(hmin, hmax, points)
+    entropy_plot = np.zeros(points)
+    adj_gap_ratio_plot = np.zeros(points)
+    for i in range(len(h_list)):
+        H = aubryH.blk_full(N, h_list[i], c, 0, phi).tocsc()
+        H, psis, eigvs = aubryC.gen_eigenpairs(N, H, num_psis)
+        entropy_plot[i], entropy_list, variance_plot[i], variance_list = aubryC.entropy_variance_list(psis, spin, N)
+        adj_gap_ratio_plot[i] = aubryC.average_adj_gap_ratio(eigvs)
+    return entropy_plot, entropy_list, variance_plot, variance_list, adj_gap_ratio_plot, eigvs
+
+
 def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
                          phisample):
     """
