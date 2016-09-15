@@ -15,9 +15,9 @@ import numpy as np
 from scipy.sparse import dok_matrix, lil_matrix, issparse
 from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
-from multiprocessing import Pool, Manager
-import os
-from itertools import repeat
+# from multiprocessing import Pool, Manager
+# import os
+# from itertools import repeat
 
 
 def spin2z(D, N, psi):
@@ -150,7 +150,7 @@ def spin2z_full(N, psi):
         if vdim == 1:
             psi_tz = psi_tz.T.conjugate()
 
-    return dummy
+    # return dummy
 
 
 def spin2z_sqm_blk(N, S):
@@ -470,3 +470,18 @@ def time_evo_exact_diag(E, V, psi, t):
     exp_fac = np.exp(-1j * E * t)
     psi_t = np.dot(V, exp_fac * psi_eig[:, 0])
     return np.array(psi_t, ndmin=2).T
+
+
+def half_chain_Sz(N):
+    Sx, Sy, Sz = qm.init(0.5)
+    Sz_tot = lil_matrix((2**N, 2**N), dtype=complex)
+    for k in range(int(round(N // 2))):
+        Sz_tot += qm.get_full_matrix(Sz, k, N)
+    return Sz_tot
+
+
+def variance(N, psi):
+    Sz_tot = half_chain_Sz(N)
+    S_sq_exp_val = qm.exp_value(Sz_tot**2, psi)
+    S_exp_val = qm.exp_value(Sz_tot, psi)
+    return S_sq_exp_val - S_exp_val**2
