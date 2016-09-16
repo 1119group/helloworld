@@ -523,7 +523,7 @@ def half_chain_Sz(N):
 
     # Convert to "spin" basis
     Sz_tot = Sz2spin_basis(N, Sz_tot)
-    ctr_blk_sz = comb(N, int(round(N // 2)))
+    ctr_blk_sz = int(round(comb(N, int(round(N // 2)))))
     shift = int(round(0.5 * (2**N - ctr_blk_sz)))
 
     # Slice out the center block
