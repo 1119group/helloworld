@@ -522,12 +522,12 @@ def half_chain_Sz(N):
         Sz_tot += qm.get_full_matrix(Sz, k, N)
 
     # Convert to "spin" basis
-    Sz_tot = Sz2spin_basis(N, Sz_tot)
-    ctr_blk_sz = int(round(comb(N, int(round(N // 2)))))
-    shift = int(round(0.5 * (2**N - ctr_blk_sz)))
+    # Sz_tot = Sz2spin_basis(N, Sz_tot)
+    # ctr_blk_sz = int(round(comb(N, int(round(N // 2)))))
+    # shift = int(round(0.5 * (2**N - ctr_blk_sz)))
 
-    # Slice out the center block
-    Sz_tot = Sz_tot[shift:shift + ctr_blk_sz, shift:shift + ctr_blk_sz]
+    # # Slice out the center block
+    # Sz_tot = Sz_tot[shift:shift + ctr_blk_sz, shift:shift + ctr_blk_sz]
     return Sz_tot
 
 
