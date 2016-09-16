@@ -431,13 +431,13 @@ def average_vn_entropy(list_of_states, spin, N):
 
 
 def entropy_variance_list(list_of_states, spin, N):
-    # work in progress
+    # work in progress (note, Gives S/L)
     lenlist = len(list_of_states)
     entropy_list = np.zeros(lenlist)
     variance_list = np.zeros(lenlist)
     for i in range(lenlist):
         entropy_list[i] = qm.get_vn_entropy(list_of_states[i], spin, N,
-                                            mode='eqsplit')
+                                            mode='eqsplit')/N
         variance_list[i] = variance(N, list_of_states[i])
     avg_vn_entropy = np.mean(entropy_list)
     avg_variance = np.mean(variance_list)

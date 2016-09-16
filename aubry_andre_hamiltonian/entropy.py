@@ -203,12 +203,20 @@ def entropy_var_vs_h(spin, N, hmin, hmax, c, phi, points, num_psis):
     h_list = np.linspace(hmin, hmax, points)
     entropy_plot = np.zeros(points)
     adj_gap_ratio_plot = np.zeros(points)
+    entropy_list_over_h = np.array([])
+    variance_list_over_h = np.array([])
+    eigvs_list_over_h = np.array([])
     for i in range(len(h_list)):
         H = aubryH.blk_full(N, h_list[i], c, 0, phi).tocsc()
         H, psis, eigvs = aubryC.gen_eigenpairs(N, H, num_psis)
-        entropy_plot[i], entropy_list, variance_plot[i], variance_list = aubryC.entropy_variance_list(psis, spin, N)
+        entropy_plot[i], entropy_list, variance_plot[i], variance_list = \
+            aubryC.entropy_variance_list(psis, spin, N)
         adj_gap_ratio_plot[i] = aubryC.average_adj_gap_ratio(eigvs)
-    return entropy_plot, entropy_list, variance_plot, variance_list, adj_gap_ratio_plot, eigvs
+        entropy_list_over_h = np.append(entropy_list_over_h, entropy_list)
+        variance_list_over_h = np.append(variance_list_over_h, variance_list)
+        eigvs_list_over_h = np.append(eigvs_list_over_h, eigvs)
+    return entropy_plot, entropy_list_over_h, variance_plot, \
+           variance_list_over_h, adj_gap_ratio_plot, eigvs_list_over_h, h_list
 
 
 def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
@@ -225,21 +233,31 @@ def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
     :param phisample:
     :return:
     """
-    phi_list = np.linspace(0, 2 * np.pi, phisample)
+    phi_list = np.linspace(0, 2 * np.pi, phisample + 1)
     phi_list = phi_list[0:-1]
     avg_phi_entropy = np.zeros(hsamples)
     avg_phi_agr = np.zeros(hsamples)
+    avg_phi_var = np.zeros(hsamples)
+    entropy_list_over_phi = np.array([])
+    variance_list_over_phi = np.array([])
+    eigvs_list_over_phi = np.array([])
     for i in range(len(phi_list)):
         start = time.time()
         print("phi", i + 1, "N", N)
-        entropy, agr, h_list = entropy_agr_vs_h(spin, N, hmin, hmax, c,
-                                                phi_list[i], hsamples,
-                                                num_psis)
+        entropy, entropy_list, variance, variance_list, agr, eigvs, h_list = \
+            entropy_var_vs_h(spin, N, hmin, hmax, c, phi_list[i], hsamples,
+                             num_psis)
         avg_phi_entropy += entropy
         avg_phi_agr += agr
+        avg_phi_var += variance
+        entropy_list_over_phi = np.append(entropy_list_over_phi, entropy_list)
+        variance_list_over_phi = np.append(variance_list_over_phi, variance_list)
+        eigvs_list_over_phi = np.append(eigvs_list_over_phi, eigvs)
         end = time.time()
         elap = end - start
         print("Iteration Time:", elap, "exp total:", elap * len(phi_list))
-    avg_phi_entropy /= len(phi_list) * N
+    avg_phi_var /= len(phi_list)
+    avg_phi_entropy /= len(phi_list)
     avg_phi_agr /= len(phi_list)
-    return avg_phi_entropy, avg_phi_agr, h_list
+    return avg_phi_entropy, entropy_list_over_phi, avg_phi_agr, variance, \
+           variance_list_over_phi, eigvs_list_over_phi, h_list
