@@ -202,6 +202,7 @@ def plot_entropy_time_evo_log(spin, N, h, c, phi, start_time,
         # Plot the first point which requires a different kind of time
         #  evolution.
 
+<<<<<<< HEAD
         if H.get_shape()[0] <= 16:
             psi_tevo_short = tm.evolve(start_time)
         else:
@@ -232,3 +233,50 @@ def plot_entropy_time_evo_log(spin, N, h, c, phi, start_time,
                                                           spin, N,
                                                           mode='eqsplit')
     return entropy_plot, error
+=======
+def entropy_var_vs_h(spin, N, hmin, hmax, c, phi, points, num_psis):
+    # replacement function to add variance and keep individual values
+    h_list = np.linspace(hmin, hmax, points)
+    entropy_plot = np.zeros(points)
+    adj_gap_ratio_plot = np.zeros(points)
+    for i in range(len(h_list)):
+        H = aubryH.blk_full(N, h_list[i], c, 0, phi).tocsc()
+        H, psis, eigvs = aubryC.gen_eigenpairs(N, H, num_psis)
+        entropy_plot[i], entropy_list, variance_plot[i], variance_list = aubryC.entropy_variance_list(psis, spin, N)
+        adj_gap_ratio_plot[i] = aubryC.average_adj_gap_ratio(eigvs)
+    return entropy_plot, entropy_list, variance_plot, variance_list, adj_gap_ratio_plot, eigvs
+
+
+def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
+                         phisample):
+    """
+    to be fixed later, runs plot_entropy_and_gap_var_h over many phi and avgs
+    :param spin:
+    :param N:
+    :param hmin:
+    :param hmax:
+    :param hsamples:
+    :param c:
+    :param num_psis:
+    :param phisample:
+    :return:
+    """
+    phi_list = np.linspace(0, 2 * np.pi, phisample)
+    phi_list = phi_list[0:-1]
+    avg_phi_entropy = np.zeros(hsamples)
+    avg_phi_agr = np.zeros(hsamples)
+    for i in range(len(phi_list)):
+        start = time.time()
+        print("phi", i + 1, "N", N)
+        entropy, agr, h_list = entropy_agr_vs_h(spin, N, hmin, hmax, c,
+                                                phi_list[i], hsamples,
+                                                num_psis)
+        avg_phi_entropy += entropy
+        avg_phi_agr += agr
+        end = time.time()
+        elap = end - start
+        print("Iteration Time:", elap, "exp total:", elap * len(phi_list))
+    avg_phi_entropy /= len(phi_list) * N
+    avg_phi_agr /= len(phi_list)
+    return avg_phi_entropy, avg_phi_agr, h_list
+>>>>>>> da148a8c9d0f1d7e97c714b72ae37fc7b32d75b4
