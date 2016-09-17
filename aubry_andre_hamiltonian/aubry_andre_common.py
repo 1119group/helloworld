@@ -537,7 +537,7 @@ def variance(N, psi, Sz_tot, Sz_tot2):
     S_sq_exp_val = float(np.real(exp_val[0, 0]))
     exp_val = psict.dot(Sz_tot.dot(psi))
     S_exp_val = float(np.real(exp_val[0, 0]))
-    return S_sq_exp_val - S_exp_val**2
+    return sqrt(S_sq_exp_val - S_exp_val**2)
 
 
 ###############################################################################
