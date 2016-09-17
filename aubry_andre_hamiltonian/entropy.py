@@ -72,16 +72,16 @@ def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
     Sz_tot = aubryC.half_chain_Sz(N)
     Sz_tot2 = Sz_tot**2
     ent_plt = np.zeros(points)
-    var_plt = ent_plt
-    agr_plt = ent_plt
+    var_plt = np.zeros(points)
+    agr_plt = np.zeros(points)
     timer = Timer(points*phis, mode='average')
     for i in range(points):
         ent_lst_full = np.array([])
-        var_lst_full = ent_lst_full
+        var_lst_full = np.array([])
         # eig_lst_full = ent_lst_full
         ent_avg = np.zeros(phis)
-        var_avg = ent_avg
-        agr_avg = ent_avg
+        var_avg = np.zeros(phis)
+        agr_avg = np.zeros(phis)
         for k in range(phis):
             H = aubryH.blk_full(N, h_list[i], c, 0, phi_list[k])
             H, psis, eigvs = aubryC.gen_eigenpairs(N, H, num_psis)
