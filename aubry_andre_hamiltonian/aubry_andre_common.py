@@ -416,20 +416,6 @@ def average_adj_gap_ratio(sorted_eigenvalue_list):
     return adj_gap_ratio
 
 
-def average_vn_entropy(list_of_states, spin, N):
-    """
-    Take a list of states, find the Von Neumann entropy for each state and then
-    find the average entropy for the set.
-    :param list_of_states:
-    :return avg_vn_entropy:
-    """
-    avg_vn_entropy = 0
-    for psi in list_of_states:
-        avg_vn_entropy += qm.get_vn_entropy(psi, spin, N, mode='eqsplit')
-    avg_vn_entropy /= len(list_of_states)
-    return avg_vn_entropy
-
-
 def ent_var_lst(list_of_states, spin, N, Sz_tot, Sz_tot2):
     # work in progress
     lenlist = len(list_of_states)
@@ -439,9 +425,9 @@ def ent_var_lst(list_of_states, spin, N, Sz_tot, Sz_tot2):
         ent_lst[i] = qm.get_vn_entropy(list_of_states[i], spin, N,
                                             mode='eqsplit')
         var_lst[i] = variance(N, list_of_states[i], Sz_tot, Sz_tot2)
-    avg_ent = np.mean(entropy_list)
-    avg_var = np.mean(variance_list)
-    return avg_ent, ent_lst, avg_var, var_list
+    avg_ent = np.mean(ent_lst)
+    avg_var = np.mean(var_lst)
+    return avg_ent, ent_lst, avg_var, var_lst
 
 
 def gen_eigenpairs(N, H, num_psis):
@@ -552,3 +538,24 @@ def variance(N, psi, Sz_tot, Sz_tot2):
     exp_val = psict.dot(Sz_tot.dot(psi))
     S_exp_val = float(np.real(exp_val[0, 0]))
     return S_sq_exp_val - S_exp_val**2
+
+
+###############################################################################
+###############################################################################
+# Deprecated Code. Leave until testing of the new entropy function is         #
+#  complete.                                                                  #
+###############################################################################
+###############################################################################
+
+def average_vn_entropy(list_of_states, spin, N):
+    """
+    Take a list of states, find the Von Neumann entropy for each state and then
+    find the average entropy for the set.
+    :param list_of_states:
+    :return avg_vn_entropy:
+    """
+    avg_vn_entropy = 0
+    for psi in list_of_states:
+        avg_vn_entropy += qm.get_vn_entropy(psi, spin, N, mode='eqsplit')
+    avg_vn_entropy /= len(list_of_states)
+    return avg_vn_entropy

@@ -87,29 +87,28 @@ def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
             H, psis, eigvs = aubryC.gen_eigenpairs(N, H, num_psis)
             ent_avg[k], ent_lst, var_avg[k], var_lst = \
                 aubryC.ent_var_lst(psis, spin, N, Sz_tot, Sz_tot2)
-            agr_avg[k] = aubryC.average_adj_gap_ratio
+            eigvs = np.sort(eigvs)
+            agr_avg[k] = aubryC.average_adj_gap_ratio(eigvs)
             ent_lst_full = np.append(ent_lst_full, ent_lst)
             var_lst_full = np.append(var_lst_full, var_lst)
             # eig_lst_full = np.append(eig_lst_full, eigvs)
+            timer.progress()
         ent_plt[i] = np.mean(ent_avg)
         var_plt[i] = np.mean(var_avg)
         agr_plt[i] = np.mean(agr_avg)
-        ent_hst_file = 'ent_hst_L' + str(N) + '_h' + str(
+        ent_hst_file = 'DATA/ent_hst_L' + str(N) + '_h' + str(
             h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
-        var_hst_file = 'var_hst_L' + str(N) + '_h' + str(
+        var_hst_file = 'DATA/var_hst_L' + str(N) + '_h' + str(
             h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
         # eig_hst_file = 'eig_hst_L' + str(N) + '_h' + str(
         #     h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
         np.savetxt(ent_hst_file, np.transpose(ent_lst_full))
         np.savetxt(var_hst_file, np.transpose(var_lst_full))
         # np.savetxt(eig_hst_file, eig_lst_full)
-        timer.progress()
     ent_plt /= N
-    ent_agr_var_plot_file = 'plot_data_L' + str(N) + '_c' + str(round(c, 2))\
+    ent_agr_var_plot_file = 'DATA/plot_data_L' + str(N) + '_c' + str(round(c, 2))\
                             + '_phi' + str(phis) + '.txt'
-    np.savetxt(ent_agr_var_plot_file,
-               (np.transpose(h_list), np.transpose(ent_plt),
-                np.transpose(agr_plt), np.transpose(var_plt)))
+    np.savetxt(ent_agr_var_plot_file, (h_list, ent_plt, agr_plt, var_plt))
 
 
 ###############################################################################
