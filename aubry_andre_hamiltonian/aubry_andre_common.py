@@ -430,18 +430,18 @@ def average_vn_entropy(list_of_states, spin, N):
     return avg_vn_entropy
 
 
-def entropy_variance_list(list_of_states, spin, N, Sz_tot, Sz_tot2):
-    # work in progress (note, Gives S/L)
+def ent_var_lst(list_of_states, spin, N, Sz_tot, Sz_tot2):
+    # work in progress
     lenlist = len(list_of_states)
-    entropy_list = np.zeros(lenlist)
-    variance_list = np.zeros(lenlist)
+    ent_lst = np.zeros(lenlist)
+    var_lst = np.zeros(lenlist)
     for i in range(lenlist):
-        entropy_list[i] = qm.get_vn_entropy(list_of_states[i], spin, N,
-                                            mode='eqsplit')/N
-        variance_list[i] = variance(N, list_of_states[i], Sz_tot, Sz_tot2)
-    avg_vn_entropy = np.mean(entropy_list)
-    avg_variance = np.mean(variance_list)
-    return avg_vn_entropy, entropy_list, avg_variance, variance_list
+        ent_lst[i] = qm.get_vn_entropy(list_of_states[i], spin, N,
+                                            mode='eqsplit')
+        var_lst[i] = variance(N, list_of_states[i], Sz_tot, Sz_tot2)
+    avg_ent = np.mean(entropy_list)
+    avg_var = np.mean(variance_list)
+    return avg_ent, ent_lst, avg_var, var_list
 
 
 def gen_eigenpairs(N, H, num_psis):
