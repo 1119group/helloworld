@@ -430,7 +430,7 @@ def average_vn_entropy(list_of_states, spin, N):
     return avg_vn_entropy
 
 
-def entropy_variance_list(list_of_states, spin, N):
+def entropy_variance_list(list_of_states, spin, N, Sz_tot, Sz_tot2):
     # work in progress (note, Gives S/L)
     lenlist = len(list_of_states)
     entropy_list = np.zeros(lenlist)
@@ -438,7 +438,7 @@ def entropy_variance_list(list_of_states, spin, N):
     for i in range(lenlist):
         entropy_list[i] = qm.get_vn_entropy(list_of_states[i], spin, N,
                                             mode='eqsplit')/N
-        variance_list[i] = variance(N, list_of_states[i])
+        variance_list[i] = variance(N, list_of_states[i], Sz_tot, Sz_tot2)
     avg_vn_entropy = np.mean(entropy_list)
     avg_variance = np.mean(variance_list)
     return avg_vn_entropy, entropy_list, avg_variance, variance_list
@@ -531,7 +531,7 @@ def half_chain_Sz(N):
     return Sz_tot
 
 
-def variance(N, psi):
+def variance(N, psi, Sz_tot, Sz_tot2):
     """
     Computes the half chain total Sz variance/dispersion of a state.
 
@@ -540,7 +540,15 @@ def variance(N, psi):
           where its sparsity is optional.
     Returns: A float
     """
-    Sz_tot = half_chain_Sz(N)
-    S_sq_exp_val = qm.exp_value(Sz_tot**2, psi)
-    S_exp_val = qm.exp_value(Sz_tot, psi)
+    if not issparse(psi):
+        psi = dok_matrix(np.matrix(psi))
+    if np.shape(psi)[1] != 1:
+        psict = psi
+        psi = psi.conjugate().transpose()
+    else:
+        psict = psi.conjugate().transpose()
+    exp_val = psict.dot(Sz_tot2.dot(psi))
+    S_sq_exp_val = float(np.real(exp_val[0, 0]))
+    exp_val = psict.dot(Sz_tot.dot(psi))
+    S_exp_val = float(np.real(exp_val[0, 0]))
     return S_sq_exp_val - S_exp_val**2

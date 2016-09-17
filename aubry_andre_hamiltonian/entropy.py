@@ -64,10 +64,11 @@ def entropy_agr_vs_h(spin, N, hmin, hmax, c, phi, points, num_psis):
     return entropy_plot, adj_gap_ratio_plot, h_list
 
 
-def entropy_var_vs_h(spin, N, hmin, hmax, c, phi, points, num_psis):
+def entropy_var_vs_h(spin, N, hmin, hmax, c, phi, points, num_psis, Sz_tot, Sz_tot2):
     # replacement function to add variance and keep individual values
     h_list = np.linspace(hmin, hmax, points)
     entropy_plot = np.zeros(points)
+    variance_plot = np.zeros(points)
     adj_gap_ratio_plot = np.zeros(points)
     entropy_list_over_h = np.array([])
     variance_list_over_h = np.array([])
@@ -76,7 +77,7 @@ def entropy_var_vs_h(spin, N, hmin, hmax, c, phi, points, num_psis):
         H = aubryH.blk_full(N, h_list[i], c, 0, phi).tocsc()
         H, psis, eigvs = aubryC.gen_eigenpairs(N, H, num_psis)
         entropy_plot[i], entropy_list, variance_plot[i], variance_list = \
-            aubryC.entropy_variance_list(psis, spin, N)
+            aubryC.entropy_variance_list(psis, spin, N, Sz_tot, Sz_tot2)
         adj_gap_ratio_plot[i] = aubryC.average_adj_gap_ratio(eigvs)
         entropy_list_over_h = np.append(entropy_list_over_h, entropy_list)
         variance_list_over_h = np.append(variance_list_over_h, variance_list)
@@ -99,6 +100,8 @@ def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
     :param phisample:
     :return:
     """
+    Sz_tot = aubryC.half_chain_Sz(N)
+    Sz_tot2 = Sz_tot**2
     phi_list = np.linspace(0, 2 * np.pi, phisample + 1)
     phi_list = phi_list[0:-1]
     avg_phi_entropy = np.zeros(hsamples)
@@ -112,7 +115,7 @@ def plot_ent_agr_avg_phi(spin, N, hmin, hmax, hsamples, c, num_psis,
         print("phi", i + 1, "N", N)
         entropy, entropy_list, variance, variance_list, agr, eigvs, h_list = \
             entropy_var_vs_h(spin, N, hmin, hmax, c, phi_list[i], hsamples,
-                             num_psis)
+                             num_psis, Sz_tot, Sz_tot2)
         avg_phi_entropy += entropy
         avg_phi_agr += agr
         avg_phi_var += variance
