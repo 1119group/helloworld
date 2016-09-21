@@ -67,7 +67,7 @@ def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
     :return: dumped data files
     """
     h_list = np.linspace(hmin, hmax, points)
-    phi_list = np.linspace(0, 2 * np.pi, phis + 1)
+    phi_list = np.linspace(0, 0.5 * np.pi, phis + 1)
     phi_list = phi_list[0:-1]
     Sz_tot = aubryC.half_chain_Sz(N)
     Sz_tot2 = Sz_tot**2
