@@ -112,47 +112,6 @@ def spin2z_blk(N, psi, total_Sz=0):
     return psi_tz
 
 
-def spin2z_full(N, psi):
-    # TODO: Needs to be tested!
-    D = 2 ** N
-    # Provide compatibility for both sparse and dense, row and column vectors.
-    if issparse(psi):
-        vdim = psi.get_shape()[0]
-        # Convert the vector into a column if it is not one already.
-        if vdim == 1:
-            psi = psi.transpose().conjugate()
-        psi = psi.tolil()
-        psi_tz = lil_matrix((D, 1), dtype=complex)
-    else:
-        vdim = np.shape(psi)[0]
-        # Convert the vector into a column if it not one already.
-        if vdim == 1:
-            psi = psi.T.conjugate()
-        psi_tz = np.zeros([D, 1], dtype=complex)
-
-    # Actual algorithm that does the job.
-    j_max = int(round(0.5 * N))
-    psi_tz[0, 0] = psi[0, 0]
-    psi_tz[-1, 0] = psi[-1, 0]
-    shift = 1
-    for current_j in range(j_max - 1, -1 * j_max, -1):
-        blk_sz = int(round(comb(N, j_max + current_j)))
-        psi_slice = psi[shift:shift + blk_sz, 0]
-        psi_tz += spin2z_blk(N, psi_slice, current_j)
-        shift += blk_sz
-
-    # Convert the longer version of the vector back to a row vector if
-    #  if was one to begin with.
-    if issparse(psi):
-        if vdim == 1:
-            psi_tz = psi_tz.transpose().conjugate()
-    else:
-        if vdim == 1:
-            psi_tz = psi_tz.T.conjugate()
-
-    # return dummy
-
-
 def spin2z_sqm_blk(N, S):
     """
     Much like the spin2z function, this function transforms an operator
@@ -469,7 +428,7 @@ def gen_eigenpairs(N, H, num_psis):
     return H, psilist, evals
 
 
-class time_machine():
+class TimeMachine():
     """
     Time evolves a given state with exact diagonalization using the eigenvalues
     and eigenvectors provided. Supersedes time_evo_exact_diag.
@@ -483,6 +442,10 @@ class time_machine():
         self.curr_state_eig = qm.change_basis(self.init_state, self.eigenvecs)
 
     def evolve(self, dt):
+        """
+        Returns a dense vector, column or row depends on the input. The return
+        will be dense whether "psi" is sparse or dense.
+        """
         if dt != self.delta_t:
             self.exp_fac = np.exp(-1j * self.eigenvals * dt)
             self.delta_t = dt
