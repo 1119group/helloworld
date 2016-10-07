@@ -340,20 +340,8 @@ def change_basis(S, basis):
     "S" is a given sparse matrix or a sparse column vector.
     "basis" is a complete set of orthonormal vectors, ordered in a
     matrix with each column vector being a basis vector.
-    Returns a sprase column vector.
+    Returns a dense column vector.
     """
-    # Old code:
-    # if issparse(basis) is False:  # basis sparsity is optional.
-    #     basis = dok_matrix(basis)
-
-    # if np.shape(S)[0] == np.shape(S)[1]:  # For operators
-    #     U = dok_matrix(basis)
-    #     S_nb = U.conjtransp().dot(S.dot(U))
-    # else:  # For vectors
-    #     dim = int(np.shape(basis)[1])
-    #     S_nb = dok_matrix((dim, 1), dtype=complex)
-    #     for i in range(dim):
-    #         S_nb[i, 0] = S.transpose().conjugate().dot(basis[:, i])[0, 0]
     # Convert the operators to dense for better handling
     if issparse(basis):
         basis = basis.todense()
