@@ -375,32 +375,18 @@ def average_adj_gap_ratio(sorted_eigenvalue_list):
     return adj_gap_ratio
 
 
-def average_vn_entropy(list_of_states, spin, N):
-    """
-    Take a list of states, find the Von Neumann entropy for each state and then
-    find the average entropy for the set.
-    :param list_of_states:
-    :return avg_vn_entropy:
-    """
-    avg_vn_entropy = 0
-    for psi in list_of_states:
-        avg_vn_entropy += qm.get_vn_entropy(psi, spin, N, mode='eqsplit')
-    avg_vn_entropy /= len(list_of_states)
-    return avg_vn_entropy
-
-
-def entropy_variance_list(list_of_states, spin, N):
-    # work in progress (note, Gives S/L)
+def ent_var_lst(list_of_states, spin, N, Sz_tot, Sz_tot2):
+    # work in progress
     lenlist = len(list_of_states)
-    entropy_list = np.zeros(lenlist)
-    variance_list = np.zeros(lenlist)
+    ent_lst = np.zeros(lenlist)
+    var_lst = np.zeros(lenlist)
     for i in range(lenlist):
-        entropy_list[i] = qm.get_vn_entropy(list_of_states[i], spin, N,
-                                            mode='eqsplit')/N
-        variance_list[i] = variance(N, list_of_states[i])
-    avg_vn_entropy = np.mean(entropy_list)
-    avg_variance = np.mean(variance_list)
-    return avg_vn_entropy, entropy_list, avg_variance, variance_list
+        ent_lst[i] = qm.get_vn_entropy(list_of_states[i], spin, N,
+                                            mode='eqsplit')
+        var_lst[i] = variance(N, list_of_states[i], Sz_tot, Sz_tot2)
+    avg_ent = np.mean(ent_lst)
+    avg_var = np.mean(var_lst)
+    return avg_ent, ent_lst, avg_var, var_lst
 
 
 def gen_eigenpairs(N, H, num_psis):
@@ -494,7 +480,7 @@ def half_chain_Sz(N):
     return Sz_tot
 
 
-def variance(N, psi):
+def variance(N, psi, Sz_tot, Sz_tot2):
     """
     Computes the half chain total Sz variance/dispersion of a state.
 
@@ -503,7 +489,36 @@ def variance(N, psi):
           where its sparsity is optional.
     Returns: A float
     """
-    Sz_tot = half_chain_Sz(N)
-    S_sq_exp_val = qm.exp_value(Sz_tot**2, psi)
-    S_exp_val = qm.exp_value(Sz_tot, psi)
+    if not issparse(psi):
+        psi = dok_matrix(np.matrix(psi))
+    if np.shape(psi)[1] != 1:
+        psict = psi
+        psi = psi.conjugate().transpose()
+    else:
+        psict = psi.conjugate().transpose()
+    exp_val = psict.dot(Sz_tot2.dot(psi))
+    S_sq_exp_val = float(np.real(exp_val[0, 0]))
+    exp_val = psict.dot(Sz_tot.dot(psi))
+    S_exp_val = float(np.real(exp_val[0, 0]))
     return S_sq_exp_val - S_exp_val**2
+
+
+###############################################################################
+###############################################################################
+# Deprecated Code. Leave until testing of the new entropy function is         #
+#  complete.                                                                  #
+###############################################################################
+###############################################################################
+
+def average_vn_entropy(list_of_states, spin, N):
+    """
+    Take a list of states, find the Von Neumann entropy for each state and then
+    find the average entropy for the set.
+    :param list_of_states:
+    :return avg_vn_entropy:
+    """
+    avg_vn_entropy = 0
+    for psi in list_of_states:
+        avg_vn_entropy += qm.get_vn_entropy(psi, spin, N, mode='eqsplit')
+    avg_vn_entropy /= len(list_of_states)
+    return avg_vn_entropy
