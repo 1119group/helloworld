@@ -5,6 +5,74 @@ import numpy as np
 from scipy.sparse.linalg import expm
 
 
+def imbalance_time_plot(N, h, c, phi, delta_ts, start_time=0):
+    """
+    This function plots the time evolution of spin imbalance
+    Σ<psi|Sz(0)Sz(t)|psi> over a linear time axis.
+
+    Args: "spin" is the spin of the individual particles
+          "N" is the system size
+          "h" is the strength of the pseudo-random field
+          "c" is the angular frequency of the field
+          "phi" is the phase shift
+          "time_range_lower_lim" is the first point in the plot, in time
+          "time_range_upper_lim" is the last point in the plot, in time
+          "sample_size" is the number points to plot
+    Returns: "imbalance_plot" is a list of values to be plotted.
+             "error" is the status of the state choosing function that
+             is called from this function. If "error" is True, then no
+             state of a zero total <Sz> with an energy density could be found
+             for the current configuration.
+    """
+    spin = 0.5
+    D = int(2 * spin + 1) ** N
+    Sx, Sy, Sz = qm.init(spin)
+    points = len(delta_ts) + 1
+    imbalance_plot = np.zeros(points)
+    H = aubryH.blk_full(N, h, c, 0, phi).tocsc()
+
+    # Use exact diagonalization for small systems.
+    psi, error = aubryC.get_state_blk(H, N)
+    H = H.toarray()
+    E, V = np.linalg.eigh(H)
+    tm = aubryC.TimeMachine(E, V, psi)
+
+    # So in a nutshell, the following process is all carried out in the
+    #  block spin basis. The Pauli Sz spin operator is rearranged into
+    #  the block spin basis and only the center block (spin 0 block) is
+    #  sliced out and kept. Everything else happens as usual.
+    if not error:
+        psi_Szs = np.empty(N, dtype=object)
+        # full_Szs will be in the block H spin basis
+        full_Szs = np.empty(N, dtype=object)
+        ctr_blk_sz = H.shape[0]
+        shift = int(round(0.5 * (D - ctr_blk_sz)))
+
+        # Set up the calculations by finding all the requisite vectors.
+        psi_Szs = []
+        full_Szs = []
+        for k in range(N):
+            Sz_full_k = qm.get_full_matrix(Sz, k, N)
+            Sz_full_k_sb = aubryC.Sz2spin_basis(N, Sz_full_k)
+            # Slice out the center block which is the only part that matters.
+            Sz_full_k_sb = Sz_full_k_sb[shift:shift + ctr_blk_sz,
+                                        shift:shift + ctr_blk_sz].toarray()
+            psi_Sz = psi.transpose().conjugate().dot(Sz_full_k_sb)
+            psi_Szs.append(aubryC.TimeMachine(E, V, psi_Sz.transpose().conjugate()))
+            full_Szs.append(Sz_full_k_sb.copy())
+
+        # Plot the rest of the points.
+        for plot_point in range(points):
+            if plot_point == 0:
+                psi_t = tm.evolve(start_time)
+            else:
+                psi_t = tm.evolve(delta_ts[plot_point - 1])
+            for k in range(N):
+                psi_Sz = psi_Szs[k].evolve(delta_ts[plot_point - 1]).transpose().conjugate()
+                imbalance_plot[plot_point] += np.real(psi_Sz.dot(full_Szs[k].dot( psi_t))[0, 0])
+
+    return 4 / N * imbalance_plot, error
+
 def plot_imbalance_time_evo_log(spin, N, h, c, phi, time_range_lower_lim,
                                 time_range_upper_lim, sample_size):
     """
