@@ -401,16 +401,15 @@ def gen_eigenpairs(N, H, num_psis):
     E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
     E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
     E = np.append(E_min, E_max)
+    print(E)
     target_E = .5 * (E[0] + E[-1])
     psilist = []
-    evals, evecs = eigsh(H, k=int(num_psis), sigma=target_E)
+    evals, evecs = eigsh(H, k=int(num_psis), which='LM', sigma=target_E)
     evals.sort()
-
     evecs = np.matrix(evecs, dtype=complex)
     for i in range(evecs.shape[1]):
         psi = spin2z_blk(N, evecs[:, i])
         psilist.append(psi)
-
     return H, psilist, evals
 
 
