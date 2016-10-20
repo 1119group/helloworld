@@ -9,8 +9,6 @@ import quantum_module as qm
 import numpy as np
 import scipy.sparse as sp
 from scipy.misc import comb
-import os
-import pickle
 
 
 def bin_to_dec(l):
