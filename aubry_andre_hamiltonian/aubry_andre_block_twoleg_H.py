@@ -10,7 +10,7 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.misc import comb
 from scipy import io
-import pickle
+import msgpack
 import functools
 
 
@@ -18,23 +18,23 @@ def _abs_diff(x, y):
     return abs(x - y)
 
 
-def cache(function):
+def msgpackcache(function):
     """Generic caching wrapper. Should work on any kind of I/O"""
     @functools.wraps(function)
     def wrapper(*args, **kargs):
         try:
             cachefile = './cache/{}{}'.format(function.__name__, (args, kargs))
             with open(cachefile, 'rb') as c:
-                return pickle.load(c)
+                return msgpack.load(c)
         except FileNotFoundError:
             result = function(*args, **kargs)
             with open(cachefile, 'wb') as c:
-                pickle.dump(result, c, pickle.HIGHEST_PROTOCOL)
+                msgpack.dump(result, c)
             return result
     return wrapper
 
 
-def cachemat(function):
+def scipycache(function):
     """Caching wrapper for sparse matrix generating functions."""
     @functools.wraps(function)
     def wrapper(*args, **kargs):
@@ -53,7 +53,7 @@ def bin_to_dec(l):
     return int(''.join(map(str, l)), 2)
 
 
-@cache
+@msgpackcache
 def create_complete_basis(N, current_j):
     """Creates a complete basis for the current total <Sz>"""
     dim = 2 ** N
@@ -120,7 +120,7 @@ def diagonal_single_block(N, h, c, phi, J1, J2, I, current_j):
     return sp.diags(diagonal, 0, dtype=complex)
 
 
-@cachemat
+@scipycache
 def off_diagonal_single_block(N, J1, J2, I, current_j):
     """
     Creates the off diagonals of a block of the Hamiltonian.
@@ -161,7 +161,7 @@ def off_diagonal_single_block(N, J1, J2, I, current_j):
     return off_diagonal
 
 
-@cachemat
+@scipycache
 def single_block(N, h, c, phi, J1=1, J2=1, I=2, current_j=0):
     """
     Creates a block of the Hamiltonian
