@@ -11,11 +11,7 @@ import scipy.sparse as sp
 from scipy.misc import comb
 
 
-def _abs_diff(x, y):
-    return abs(x - y)
-
-
-def _bin_to_dec(l):
+def bin_to_dec(l):
     """Converts a list "l" of 1s and 0s into a decimal"""
     return int(''.join(map(str, l)), 2)
 
@@ -37,7 +33,7 @@ def create_complete_basis(N, current_j):
         except IndexError:                # When current_j is N // 2 or -N // 2
             pass
         basis_set.append(basis[:])
-        decimal_basis = _bin_to_dec(basis)
+        decimal_basis = bin_to_dec(basis)
         to_diag[decimal_basis] = i      # i is the index within only this block
         to_ord[i] = dim - decimal_basis - 1
     return basis_set, to_diag, to_ord
@@ -68,7 +64,7 @@ def diagonal_single_block(N, h, c, phi, J1, J2, I, current_j):
         # Number of repeated 1s and 0s separated by I
         #  Compute absolute values of differences of pairs separated by I
         #  and sum. Periodic BC (horizontal interaction).
-        diff_pairs = sum(map(_abs_diff, b, b[I:] + b[:I]))
+        diff_pairs = sum(map(lambda x, y: abs(x - y), b, b[I:] + b[:I]))
         same_pairs = N - diff_pairs
         diagonal[i] += 0.25 * J1 * (same_pairs - diff_pairs)
 
@@ -76,8 +72,8 @@ def diagonal_single_block(N, h, c, phi, J1, J2, I, current_j):
         #  Closed BC (interaction between legs)
         if not I <= 1:
             comp = [m for m in range(N) if not (m + 1) % I == 0]
-            diff_pairs = sum(map(_abs_diff, [b[m] for m in comp],
-                                 [b[m + 1] for m in comp]))
+            diff_pairs = sum(map(lambda x, y: abs(x - y),
+                             [b[m] for m in comp], [b[m + 1] for m in comp]))
             same_pairs = len(comp) - diff_pairs
             diagonal[i] += 0.25 * J2 * (same_pairs - diff_pairs)
 
@@ -101,8 +97,8 @@ def off_diagonal_single_block(N, J1, J2, I, current_j):
         """Sets non-zero elements in the matrix"""
         bj = bi[:]
         bj[pair[0]], bj[pair[1]] = bj[pair[1]], bj[pair[0]]
-        if not sum(map(_abs_diff, bi, bj)) == 0:
-            j = to_diag[_bin_to_dec(bj)]
+        if not sum(map(lambda x, y: abs(x - y), bi, bj)) == 0:
+            j = to_diag[bin_to_dec(bj)]
             off_diagonal[i, j] = 0.5 * J
 
     basis_set, to_diag, to_ord = create_complete_basis(N, current_j)
