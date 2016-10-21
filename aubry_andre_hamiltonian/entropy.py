@@ -8,7 +8,7 @@ import time
 from timer import Timer
 
 
-def entropy_time_plot(N, h, c, phi, delta_ts, start_time=0):
+def entropy_time_plot(N, H, delta_ts, start_time=0):
     """
     This function plots the time evolution of von Neuman entropy
     using exact diagonalization.
@@ -30,13 +30,12 @@ def entropy_time_plot(N, h, c, phi, delta_ts, start_time=0):
     Sx, Sy, Sz = qm.init(spin)
     points = len(delta_ts) + 1
     entropy_plot = np.zeros(points)
-    H = aubryH.blk_full(N, h, c, 0, phi).tocsc()
 
     # Use exact diagonalization for small systems.
     psi, error = aubryC.get_state_blk(H, N)
     H = H.toarray()
     E, V = np.linalg.eigh(H)
-    tm = aubryC.time_machine(E, V, psi)
+    tm = aubryC.TimeMachine(E, V, psi)
 
     if not error:
         # Plot the rest of the points with time evolution.
