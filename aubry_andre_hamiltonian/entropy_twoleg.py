@@ -1,5 +1,5 @@
 import quantum_module as qm
-import aubry_andre_common as aubryC
+import aubry_andre_common as common
 import numpy as np
 import aubry_andre_block_twoleg_H as hm
 
@@ -27,7 +27,7 @@ def entropy_time_plot(N, H, delta_ts, start_time=0):
           "c" is the angular frequency of the field
           "phi" is the phase shift
           "delta_ts" is a list/array of delta t to be passed on the function
-    Returns: "imbalance_plot" is a list of values to be plotted.
+    Returns: "entropy_plot" is a list of values to be plotted.
              "error" is the status of the state choosing function that
              is called from this function. If "error" is True, then no
              state of a zero total <Sz> with an energy density could be found
@@ -38,10 +38,10 @@ def entropy_time_plot(N, H, delta_ts, start_time=0):
     entropy_plot = np.zeros(points)
 
     # Use exact diagonalization for small systems.
-    psi, error = aubryC.get_state_blk(H, N)
+    psi, error = common.get_state_blk(H, N)
     H = H.toarray()
     E, V = np.linalg.eigh(H)
-    tm = aubryC.TimeMachine(E, V, psi)
+    tm = common.TimeMachine(E, V, psi)
 
     if not error:
         # Plot the rest of the points with time evolution.
