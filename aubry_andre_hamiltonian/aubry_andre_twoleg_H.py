@@ -5,9 +5,7 @@ import numpy as np
 def full_smatrices(N):
     spin = 0.5
     Sx, Sy, Sz = qm.init(spin)
-    Sxs = []
-    Sys = []
-    Szs = []
+    Sxs, Sys, Szs = [], [], []
     for k in range(N):
         Sxs.append(qm.get_full_matrix(Sx, k, N))
         Sys.append(qm.get_full_matrix(Sy, k, N))
