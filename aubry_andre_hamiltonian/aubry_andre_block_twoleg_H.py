@@ -18,7 +18,7 @@ def _abs_diff(x, y):
     return abs(x - y)
 
 
-def msgpackcache(function):
+def cache(function):
     """Generic caching wrapper. Should work on any kind of I/O"""
     @functools.wraps(function)
     def wrapper(*args, **kargs):
@@ -34,7 +34,7 @@ def msgpackcache(function):
     return wrapper
 
 
-def scipycache(function):
+def matcache(function):
     """Caching wrapper for sparse matrix generating functions."""
     @functools.wraps(function)
     def wrapper(*args, **kargs):
@@ -53,7 +53,7 @@ def bin_to_dec(l):
     return int(''.join(map(str, l)), 2)
 
 
-@msgpackcache
+@cache
 def create_complete_basis(N, current_j):
     """Creates a complete basis for the current total <Sz>"""
     dim = 2 ** N
@@ -120,7 +120,7 @@ def diagonal_single_block(N, h, c, phi, J1, J2, I, current_j):
     return sp.diags(diagonal, 0, dtype=complex)
 
 
-@scipycache
+@matcache
 def off_diagonal_single_block(N, J1, J2, I, current_j):
     """
     Creates the off diagonals of a block of the Hamiltonian.
@@ -161,7 +161,7 @@ def off_diagonal_single_block(N, J1, J2, I, current_j):
     return off_diagonal
 
 
-@scipycache
+@matcache
 def single_block(N, h, c, phi, J1=1, J2=1, I=2, current_j=0):
     """
     Creates a block of the Hamiltonian
