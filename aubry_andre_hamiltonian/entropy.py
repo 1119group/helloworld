@@ -26,7 +26,7 @@ def entropy_time_plot(N, H, delta_ts, start_time=0):
              for the current configuration.
     """
     spin = 0.5
-    D = int(2 * spin + 1) ** N
+    # D = int(2 * spin + 1) ** N
     Sx, Sy, Sz = qm.init(spin)
     points = len(delta_ts) + 1
     entropy_plot = np.zeros(points)
@@ -44,8 +44,8 @@ def entropy_time_plot(N, H, delta_ts, start_time=0):
                 psi_t = tm.evolve(start_time)
             else:
                 psi_t = tm.evolve(delta_ts[plot_point - 1])
-            psi_long = lil_matrix(aubryC.recast(N, psi_t))
-            psi_tz = aubryC.spin2z(D, N, psi_long)
+            # psi_long = lil_matrix(aubryC.recast(N, psi_t))
+            psi_tz = aubryC.spin2z_blk(N, psi_t)
             entropy_plot[plot_point] += qm.get_vn_entropy(psi_tz, spin, N,
                                                           mode='eqsplit')
     return entropy_plot, error
