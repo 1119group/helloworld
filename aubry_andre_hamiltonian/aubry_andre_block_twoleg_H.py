@@ -161,7 +161,6 @@ def off_diagonal_single_block(N, J1, J2, I, current_j):
     return off_diagonal
 
 
-@matcache
 def single_block(N, h, c, phi, J1=1, J2=1, I=2, current_j=0):
     """
     Creates a block of the Hamiltonian
