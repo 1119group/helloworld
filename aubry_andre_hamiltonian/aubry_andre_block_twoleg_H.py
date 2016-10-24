@@ -12,6 +12,7 @@ from scipy.misc import comb
 from scipy import io
 import msgpack
 import functools
+import os
 
 
 def _abs_diff(x, y):
@@ -23,6 +24,8 @@ def cache(function):
     @functools.wraps(function)
     def wrapper(*args, **kargs):
         cachefile = './cache/{}{}.mp'.format(function.__name__, (args, kargs))
+        if not os.path.isdir('./cache/'):
+            os.mkdir('./cache/')
         try:
             with open(cachefile, 'rb') as c:
                 return msgpack.load(c)
@@ -39,6 +42,8 @@ def matcache(function):
     @functools.wraps(function)
     def wrapper(*args, **kargs):
         cachefile = './cache/{}{}.mat'.format(function.__name__, (args, kargs))
+        if not os.path.isdir('./cache/'):
+            os.mkdir('./cache/')
         try:
             return io.loadmat(cachefile)['i']
         except FileNotFoundError:
@@ -72,7 +77,7 @@ def create_complete_basis(N, current_j):
             pass
         basis_set.append(basis[:])
         decimal_basis = bin_to_dec(basis)
-        to_diag[decimal_basis] = i      # i is the index within only this block
+        to_diag[dim - decimal_basis - 1] = i      # i is the index within only this block
         to_ord[i] = dim - decimal_basis - 1
     return basis_set, to_diag, to_ord
 
@@ -137,9 +142,10 @@ def off_diagonal_single_block(N, J1, J2, I, current_j):
         bj = bi[:]
         bj[pair[0]], bj[pair[1]] = bj[pair[1]], bj[pair[0]]
         if not sum(map(_abs_diff, bi, bj)) == 0:
-            j = to_diag[bin_to_dec(bj)]
+            j = to_diag[dim - bin_to_dec(bj) - 1]
             off_diagonal[i, j] += 0.5 * J
 
+    dim = 2 ** N
     basis_set, to_diag, to_ord = create_complete_basis(N, current_j)
     blksize = len(basis_set)
     off_diagonal = sp.lil_matrix((blksize, blksize), dtype=complex)
