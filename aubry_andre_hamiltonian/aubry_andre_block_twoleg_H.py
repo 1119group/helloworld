@@ -108,7 +108,7 @@ def diagonal_single_block(N, h, c, phi, J1, J2, I, current_j):
 
         # Number of different adjacent 1s and 0s.
         #  Closed BC (interaction between legs)
-        if not I <= 1:
+        if I > 1:
             comp = [m for m in range(N) if not (m + 1) % I == 0]
             diff_pairs = sum(map(_abs_diff, [b[m] for m in comp],
                                  [b[m + 1] for m in comp]))
@@ -138,7 +138,7 @@ def off_diagonal_single_block(N, J1, J2, I, current_j):
         bj[pair[0]], bj[pair[1]] = bj[pair[1]], bj[pair[0]]
         if not sum(map(_abs_diff, bi, bj)) == 0:
             j = to_diag[bin_to_dec(bj)]
-            off_diagonal[i, j] = 0.5 * J
+            off_diagonal[i, j] += 0.5 * J
 
     basis_set, to_diag, to_ord = create_complete_basis(N, current_j)
     blksize = len(basis_set)
@@ -155,7 +155,7 @@ def off_diagonal_single_block(N, J1, J2, I, current_j):
             non_zero_element(i, bi, pair, J1)
 
         # Flipping of elements adjacent to each other
-        if not I <= 1:
+        if I > 1:
             for pair in adjacent_pairs:
                 non_zero_element(i, bi, pair, J2)
     return off_diagonal
