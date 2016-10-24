@@ -4,6 +4,7 @@ rest of the code base.
 """
 import quantum_module as qm
 import scipy as scp
+import numpy as np
 
 
 def bin_to_dec(l):
@@ -43,13 +44,19 @@ def similarity_trans_matrix(N):
     Args: "N" System size
     Returns: Sparse matrix (CSC matrix)
     """
-    trans = scp.sparse.lil_matrix((2 ** N, 2 ** N))
     offset = 0
+    dim = 2 ** N
+    data = np.ones(dim)
+    row_ind = np.empty(dim)
+    col_ind = np.empty(dim)
+    current_pos = 0                     # current position along the data array
     for current_j in range(N // 2, -N // 2 - 1, -1):
         spin_ups = round(0.5 * N + current_j)
         blksize = int(round(scp.misc.comb(N, spin_ups)))
         to_diag = create_complete_basis(N, current_j)[1]
         for ord_ind, diag_ind in to_diag.items():
-            trans[diag_ind + offset, ord_ind] = 1
+            row_ind[current_pos] = diag_ind + offset
+            col_ind[current_pos] = ord_ind
+            current_pos += 1
         offset += blksize
-    return scp.sparse.csc_matrix(trans)
+    return scp.sparse.csc_matrix((data, (row_ind, col_ind)), shape=(dim, dim))
