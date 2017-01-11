@@ -22,7 +22,7 @@ def block_diagonalized_H(N, h, c, phi, J=1):
     return U * H * U.T
 
 
-def spin_block(N, h, c, phi, curr_j, J=1):
+def spin_block(N, h, c, phi, curr_j=0, J=1):
     offset = sum(comb(N, j, exact=True) for j in np.arange(0.5 * N - curr_j))
     blk_size = comb(N, round(0.5 * N + curr_j), exact=True)
     H = block_diagonalized_H(N, h, c, phi, J)
