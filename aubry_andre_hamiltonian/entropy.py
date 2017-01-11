@@ -88,6 +88,7 @@ def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
                 H, psis, eigvs = aubryC.gen_eigenpairs(N, H, num_psis)
             except:
                 print("Configuration failed to converge: H ", h_list[i], " Phi ", phi_list[k])
+                continue
             ent_lst, var_lst = \
                 aubryC.ent_var_lst(psis, spin, N, Sz_tot, Sz_tot2)
             eigvs = np.sort(eigvs)
