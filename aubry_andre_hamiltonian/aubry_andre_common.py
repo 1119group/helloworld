@@ -2,7 +2,7 @@
 This module provides common function for many calculations in dealing with
 block diagonalized Hamiltonians.
 
-8-22-2016
+1-11-2017
 """
 # TODO: Update/complete all the doc-strings to describe in depth the
 #       arguments and returns.
@@ -11,10 +11,12 @@ block diagonalized Hamiltonians.
 import quantum_module as qm
 from aubry_andre_H import aubry_andre_H
 import aubry_andre_block_H as aubryH
+import aubry_andre_block_twoleg_H as tH
 import numpy as np
 from scipy.sparse import dok_matrix, lil_matrix, issparse
 from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
+from glovalvar import to_ords
 # from multiprocessing import Pool, Manager
 # import os
 # from itertools import repeat
@@ -76,16 +78,19 @@ def spin2z_blk_nocompat(N, psi, psi_tz, options):
              spin basis.
     """
     [total_Sz] = options
-    D = 2 ** N
+    # D = 2 ** N
 
-    j_max = int(round(0.5 * N))
-    blk_sz = int(round(comb(N, j_max)))
-    basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max, total_Sz)
+    # j_max = int(round(0.5 * N))
+    # blk_sz = int(round(comb(N, j_max)))
+    to_ord = to_ords[N]
+    # to_ord = tH.create_complete_basis(N, total_Sz)[2]
+    # basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max, total_Sz)
     for i in psi.nonzero()[0]:
-        # if i < blk_sz:
-        l = basis_set_0[i]
-        dec = aubryH.bin2dec(l)
-        psi_tz[D - 1 - dec, 0] = psi[i, 0]
+        # # if i < blk_sz:
+        # l = basis_set_0[i]
+        # dec = aubryH.bin2dec(l)
+        # psi_tz[D - 1 - dec, 0] = psi[i, 0]
+        psi_tz[to_ord[i], 0] = psi[i, 0]
 
     return psi_tz
 
