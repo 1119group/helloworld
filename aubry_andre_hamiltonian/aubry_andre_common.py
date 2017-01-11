@@ -17,7 +17,7 @@ import numpy as np
 from scipy.sparse import dok_matrix, lil_matrix, issparse
 from scipy.sparse.linalg import eigsh
 from scipy.misc import comb
-from glovalvar import to_ords
+from globalvar import to_ords
 # from multiprocessing import Pool, Manager
 # import os
 # from itertools import repeat
