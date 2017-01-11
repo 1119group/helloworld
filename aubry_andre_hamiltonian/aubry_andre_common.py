@@ -358,21 +358,19 @@ def get_state_blk(H, N):
     return psi, error
 
 
-def average_adj_gap_ratio(sorted_eigenvalue_list):
+def adj_gap_ratio(sorted_eigenvalue_list):
     """
     Takes a list of eigenvalues that have been sorted low to high, finds the
-    adjusted gap ratio for each set of 3 adjacent eigenvalues and then finds
-    the average adjusted gap ratio.
+    adjacent gap ratio for each set of 3 adjacent eigenvalues
     :param sorted_eigenvalue_list:
     :return adj_gap_ratio:
     """
-    adj_gap_ratio = 0
     delta_n_list = np.diff(sorted_eigenvalue_list)
-    for x in range(0, len(delta_n_list) - 1):
-        adj_gap_ratio += min(delta_n_list[x], delta_n_list[x + 1]) /\
-            max(delta_n_list[x], delta_n_list[x + 1])
-    adj_gap_ratio /= len(delta_n_list) - 1
-    return adj_gap_ratio
+    lenlist = len(delta_n_list) - 1
+    agr_lst = np.zeros(lenlist)
+    for i in range(0, lenlist):
+        agr_lst[i] = min(delta_n_list[i], delta_n_list[i + 1]) / max(delta_n_list[i], delta_n_list[i + 1])
+    return agr_lst
 
 
 def ent_var_lst(list_of_states, spin, N, Sz_tot, Sz_tot2):
@@ -384,9 +382,7 @@ def ent_var_lst(list_of_states, spin, N, Sz_tot, Sz_tot2):
         ent_lst[i] = qm.get_vn_entropy(list_of_states[i], spin, N,
                                             mode='eqsplit')
         var_lst[i] = variance(N, list_of_states[i], Sz_tot, Sz_tot2)
-    avg_ent = np.mean(ent_lst)
-    avg_var = np.mean(var_lst)
-    return avg_ent, ent_lst, avg_var, var_lst
+    return ent_lst, var_lst
 
 
 def gen_eigenpairs(N, H, num_psis):

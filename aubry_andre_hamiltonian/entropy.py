@@ -73,44 +73,52 @@ def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
     ent_plt = np.zeros(points)
     var_plt = np.zeros(points)
     agr_plt = np.zeros(points)
+    ent_std = np.zeros(points)
+    var_std = np.zeros(points)
+    agr_std = np.zeros(points)
     timer = Timer(points*phis, mode='average')
     for i in range(points):
         ent_lst_full = np.array([])
         var_lst_full = np.array([])
+        agr_lst_full = np.array([])
         # eig_lst_full = ent_lst_full
-        ent_avg = np.zeros(phis)
-        var_avg = np.zeros(phis)
-        agr_avg = np.zeros(phis)
         for k in range(phis):
             H = aubryH.blk_full(N, h_list[i], c, 0, phi_list[k])
             try:
                 H, psis, eigvs = aubryC.gen_eigenpairs(N, H, num_psis)
             except:
                 print("Configuration failed to converge: H ", h_list[i], " Phi ", phi_list[k])
-            ent_avg[k], ent_lst, var_avg[k], var_lst = \
+            ent_lst, var_lst = \
                 aubryC.ent_var_lst(psis, spin, N, Sz_tot, Sz_tot2)
             eigvs = np.sort(eigvs)
-            agr_avg[k] = aubryC.average_adj_gap_ratio(eigvs)
+            agr_lst = aubryC.adj_gap_ratio(eigvs)
             ent_lst_full = np.append(ent_lst_full, ent_lst)
             var_lst_full = np.append(var_lst_full, var_lst)
+            agr_lst_full = np.append(agr_lst_full, agr_lst)
             # eig_lst_full = np.append(eig_lst_full, eigvs)
             timer.progress()
-        ent_plt[i] = np.mean(ent_avg)
-        var_plt[i] = np.mean(var_avg)
-        agr_plt[i] = np.mean(agr_avg)
+        ent_plt[i] = np.mean(ent_lst_full)
+        ent_std[i] = np.std(ent_lst_full)
+        var_plt[i] = np.mean(var_lst_full)
+        var_std[i] = np.std(var_lst_full)
+        agr_plt[i] = np.mean(agr_lst_full)
+        agr_std[i] = np.std(agr_lst_full)
         ent_hst_file = 'DATA/ent_hst_L' + str(N) + '_h' + str(
             h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
         var_hst_file = 'DATA/var_hst_L' + str(N) + '_h' + str(
+            h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
+        agr_hst_file = 'DATA/agr_hst_L' + str(N) + '_h' + str(
             h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
         # eig_hst_file = 'eig_hst_L' + str(N) + '_h' + str(
         #     h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
         np.savetxt(ent_hst_file, np.transpose(ent_lst_full))
         np.savetxt(var_hst_file, np.transpose(var_lst_full))
+        np.savetxt(agr_hst_file, np.transpose(agr_lst_full))
         # np.savetxt(eig_hst_file, eig_lst_full)
     ent_plt /= N
     ent_agr_var_plot_file = 'DATA/plot_data_L' + str(N) + '_c' + str(round(c, 2))\
                             + '_phi' + str(phis) + '.txt'
-    np.savetxt(ent_agr_var_plot_file, (h_list, ent_plt, agr_plt, var_plt))
+    np.savetxt(ent_agr_var_plot_file, (h_list, ent_plt, ent_std, agr_plt, agr_std, var_plt, var_std))
 
 
 ###############################################################################
