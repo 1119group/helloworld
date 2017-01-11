@@ -52,7 +52,7 @@ def entropy_time_plot(N, H, delta_ts, start_time=0):
     return entropy_plot, error
 
 
-def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis, full_S):
+def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
     """
     This function creates data dumps for plotting of eigenstate entropy,
     adjusted gap ratio, and variance. Also data for histograms
@@ -84,7 +84,7 @@ def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis, full_S):
         agr_lst_full = np.array([])
         # eig_lst_full = ent_lst_full
         for k in range(phis):
-            H = aubryHo.spin_block(N, h_list[i], c, phi_list[k], full_S)
+            H = aubryHo.spin_block(N, h_list[i], c, phi_list[k])
             try:
                 H, psis, eigvs = aubryC.gen_eigenpairs(N, H, num_psis)
             except:
