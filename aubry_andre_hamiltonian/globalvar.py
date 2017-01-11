@@ -2,7 +2,7 @@ import quantum_module as qm
 import block_diag as bd
 import aubry_andre_block_twoleg_H as tH
 
-N = 12
+N = 10
 total_Sz = 0
 Sx, Sy, Sz = qm.init(0.5)
 to_ords = tH.create_complete_basis(N, total_Sz)[2]

@@ -94,30 +94,30 @@ def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
                 aubryC.ent_var_lst(psis, spin, N, Sz_tot, Sz_tot2)
             eigvs = np.sort(eigvs)
             agr_lst = aubryC.adj_gap_ratio(eigvs)
+            ent_lst /= N
             ent_lst_full = np.append(ent_lst_full, ent_lst)
-            var_lst_full = np.append(var_lst_full, var_lst)
+            # var_lst_full = np.append(var_lst_full, var_lst)
             agr_lst_full = np.append(agr_lst_full, agr_lst)
             # eig_lst_full = np.append(eig_lst_full, eigvs)
             timer.progress()
         ent_plt[i] = np.mean(ent_lst_full)
         ent_std[i] = np.std(ent_lst_full)
-        var_plt[i] = np.mean(var_lst_full)
-        var_std[i] = np.std(var_lst_full)
+        # var_plt[i] = np.mean(var_lst_full)
+        # var_std[i] = np.std(var_lst_full)
         agr_plt[i] = np.mean(agr_lst_full)
         agr_std[i] = np.std(agr_lst_full)
         ent_hst_file = 'DATA/ent_hst_L' + str(N) + '_h' + str(
             h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
-        var_hst_file = 'DATA/var_hst_L' + str(N) + '_h' + str(
-            h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
+        # var_hst_file = 'DATA/var_hst_L' + str(N) + '_h' + str(
+        #     h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
         agr_hst_file = 'DATA/agr_hst_L' + str(N) + '_h' + str(
             h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
         # eig_hst_file = 'eig_hst_L' + str(N) + '_h' + str(
         #     h_list[i]) + '_c' + str(round(c, 2)) + '.txt'
         np.savetxt(ent_hst_file, np.transpose(ent_lst_full))
-        np.savetxt(var_hst_file, np.transpose(var_lst_full))
+        # np.savetxt(var_hst_file, np.transpose(var_lst_full))
         np.savetxt(agr_hst_file, np.transpose(agr_lst_full))
         # np.savetxt(eig_hst_file, eig_lst_full)
-    ent_plt /= N
     ent_agr_var_plot_file = 'DATA/plot_data_L' + str(N) + '_c' + str(round(c, 2))\
                             + '_phi' + str(phis) + '.txt'
     np.savetxt(ent_agr_var_plot_file, (h_list, ent_plt, ent_std, agr_plt, agr_std, var_plt, var_std))

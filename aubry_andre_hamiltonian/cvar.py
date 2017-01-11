@@ -47,14 +47,14 @@ import quantum_module as qm
 # print("N=10")
 # ent.ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis)
 
-N = 12
+N = 10
 spin = 1/2
 hmin = 1
-hmax = 10
+hmax = 5
 c = np.sqrt(2) - 1
-points = 19
-phis = 800
-num_psis = 70
+points = 21
+phis = 1000
+num_psis = 50
 total_Sz = 0
 print("N = ", N)
 ent.ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis)

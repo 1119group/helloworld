@@ -387,7 +387,7 @@ def ent_var_lst(list_of_states, spin, N, Sz_tot, Sz_tot2):
     for i in range(lenlist):
         ent_lst[i] = qm.get_vn_entropy(list_of_states[i], spin, N,
                                             mode='eqsplit')
-        var_lst[i] = variance(N, list_of_states[i], Sz_tot, Sz_tot2)
+        # var_lst[i] = variance(N, list_of_states[i], Sz_tot, Sz_tot2)
     return ent_lst, var_lst
 
 
