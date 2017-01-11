@@ -400,7 +400,7 @@ def gen_eigenpairs(N, H, num_psis):
     :return:
     """
     global index
-    E = np.sort(eigsh(H, k=2, which='BE', maxiter=1e6, return_eigenvectors=False))
+    E = np.sort(eigsh(H, k=2, which='BE', return_eigenvectors=False))
     print(E)
     target_E = .5 * (E[0] + E[-1])
     psilist = []
