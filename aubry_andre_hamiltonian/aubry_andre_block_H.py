@@ -73,7 +73,7 @@ def basis_set(N, blk_sz, j_max, current_j):
         basis_set_seed = [0] * N
         basis_ind_dict = {}
         basis_index = 0
-        for n in range(j_max + current_j):
+        for n in range(round(j_max + current_j)):
             basis_set_seed[N - 1 - n] = 1
         current_j_basis_set = []
         if blk_sz != 1:
