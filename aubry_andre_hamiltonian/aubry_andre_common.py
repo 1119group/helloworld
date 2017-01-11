@@ -83,7 +83,7 @@ def spin2z_blk_nocompat(N, psi, psi_tz, options):
 
     # j_max = int(round(0.5 * N))
     # blk_sz = int(round(comb(N, j_max)))
-    to_ord = to_ords[N]
+    to_ord = to_ords
     # to_ord = tH.create_complete_basis(N, total_Sz)[2]
     # basis_set_0, basis_dict_0 = aubryH.basis_set(N, blk_sz, j_max, total_Sz)
     for i in psi.nonzero()[0]:
