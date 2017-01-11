@@ -11,6 +11,7 @@ block diagonalized Hamiltonians.
 import quantum_module as qm
 from aubry_andre_H import aubry_andre_H
 import aubry_andre_block_H as aubryH
+import aubry_andre_block_H_obc as aubryHo
 import numpy as np
 from scipy.sparse import dok_matrix, lil_matrix, issparse
 from scipy.sparse.linalg import eigsh
@@ -367,7 +368,7 @@ def adj_gap_ratio(sorted_eigenvalue_list):
     """
     delta_n_list = np.diff(sorted_eigenvalue_list)
     lenlist = len(delta_n_list) - 1
-    agr_lst = np.zeros(lenlist)
+    agr_lst = np.empty(lenlist)
     for i in range(0, lenlist):
         agr_lst[i] = min(delta_n_list[i], delta_n_list[i + 1]) / max(delta_n_list[i], delta_n_list[i + 1])
     return agr_lst
@@ -376,8 +377,8 @@ def adj_gap_ratio(sorted_eigenvalue_list):
 def ent_var_lst(list_of_states, spin, N, Sz_tot, Sz_tot2):
     # work in progress
     lenlist = len(list_of_states)
-    ent_lst = np.zeros(lenlist)
-    var_lst = np.zeros(lenlist)
+    ent_lst = np.empty(lenlist)
+    var_lst = np.empty(lenlist)
     for i in range(lenlist):
         ent_lst[i] = qm.get_vn_entropy(list_of_states[i], spin, N,
                                             mode='eqsplit')
@@ -394,9 +395,7 @@ def gen_eigenpairs(N, H, num_psis):
     :return:
     """
     global index
-    E_max = eigsh(H, k=1, which='LA', maxiter=1e6, return_eigenvectors=False)
-    E_min = eigsh(H, k=1, which='SA', maxiter=1e6, return_eigenvectors=False)
-    E = np.append(E_min, E_max)
+    E = np.sort(eigsh(H, k=2, which='BE', maxiter=1e6, return_eigenvectors=False))
     print(E)
     target_E = .5 * (E[0] + E[-1])
     psilist = []
@@ -472,7 +471,7 @@ def half_chain_Sz(N):
 
     # # Slice out the center block
     # Sz_tot = Sz_tot[shift:shift + ctr_blk_sz, shift:shift + ctr_blk_sz]
-    return Sz_tot
+    return Sz_tot.real
 
 
 def variance(N, psi, Sz_tot, Sz_tot2):

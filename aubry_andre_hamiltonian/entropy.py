@@ -4,6 +4,7 @@ import numpy as np
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import expm_multiply, expm
 import aubry_andre_block_H as aubryH
+import aubry_andre_block_H_obc as aubryHo
 import time
 from timer import Timer
 
@@ -51,7 +52,7 @@ def entropy_time_plot(N, H, delta_ts, start_time=0):
     return entropy_plot, error
 
 
-def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
+def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis, full_S):
     """
     This function creates data dumps for plotting of eigenstate entropy,
     adjusted gap ratio, and variance. Also data for histograms
@@ -83,7 +84,7 @@ def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
         agr_lst_full = np.array([])
         # eig_lst_full = ent_lst_full
         for k in range(phis):
-            H = aubryH.blk_full(N, h_list[i], c, 0, phi_list[k])
+            H = aubryHo.spin_block(N, h_list[i], c, phi_list[k], full_S)
             try:
                 H, psis, eigvs = aubryC.gen_eigenpairs(N, H, num_psis)
             except:
