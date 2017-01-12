@@ -72,15 +72,15 @@ def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
     Sz_tot = aubryC.half_chain_Sz(N)
     Sz_tot2 = Sz_tot**2
     ent_plt = np.zeros(points)
-    var_plt = np.zeros(points)
+    # var_plt = np.zeros(points)
     agr_plt = np.zeros(points)
     ent_std = np.zeros(points)
-    var_std = np.zeros(points)
+    # var_std = np.zeros(points)
     agr_std = np.zeros(points)
     timer = Timer(points*phis, mode='average')
     for i in range(points):
         ent_lst_full = np.array([])
-        var_lst_full = np.array([])
+        # var_lst_full = np.array([])
         agr_lst_full = np.array([])
         # eig_lst_full = ent_lst_full
         for k in range(phis):
@@ -94,14 +94,13 @@ def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
                 aubryC.ent_var_lst(psis, spin, N, Sz_tot, Sz_tot2)
             eigvs = np.sort(eigvs)
             agr_lst = aubryC.adj_gap_ratio(eigvs)
-            ent_lst /= N
             ent_lst_full = np.append(ent_lst_full, ent_lst)
             # var_lst_full = np.append(var_lst_full, var_lst)
             agr_lst_full = np.append(agr_lst_full, agr_lst)
             # eig_lst_full = np.append(eig_lst_full, eigvs)
             timer.progress()
-        ent_plt[i] = np.mean(ent_lst_full)
-        ent_std[i] = np.std(ent_lst_full)
+        ent_plt[i] = np.mean(ent_lst_full/N)
+        ent_std[i] = np.std(ent_lst_full/N)
         # var_plt[i] = np.mean(var_lst_full)
         # var_std[i] = np.std(var_lst_full)
         agr_plt[i] = np.mean(agr_lst_full)
@@ -120,7 +119,8 @@ def ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis):
         # np.savetxt(eig_hst_file, eig_lst_full)
     ent_agr_var_plot_file = 'DATA/plot_data_L' + str(N) + '_c' + str(round(c, 2))\
                             + '_phi' + str(phis) + '.txt'
-    np.savetxt(ent_agr_var_plot_file, (h_list, ent_plt, ent_std, agr_plt, agr_std, var_plt, var_std))
+    # np.savetxt(ent_agr_var_plot_file, (h_list, ent_plt, ent_std, agr_plt, agr_std, var_plt, var_std))
+    np.savetxt(ent_agr_var_plot_file, (h_list, ent_plt, ent_std, agr_plt, agr_std))
 
 
 ###############################################################################

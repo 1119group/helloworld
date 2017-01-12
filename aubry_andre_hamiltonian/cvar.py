@@ -53,8 +53,8 @@ hmin = 1
 hmax = 5
 c = np.sqrt(2) - 1
 points = 21
-phis = 1000
-num_psis = 50
+phis = 200
+num_psis = 30
 total_Sz = 0
 print("N = ", N)
 ent.ent_agr_var_plots(spin, N, hmin, hmax, points, c, num_psis, phis)
